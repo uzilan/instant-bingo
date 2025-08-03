@@ -12,7 +12,6 @@ import {
   Button,
   Stack,
 } from '@mui/material';
-import ItemList from './ItemList';
 
 interface GameCreationFormProps {
   onSubmit: (size: number, category: string, gameMode: 'joined' | 'individual') => void;
@@ -23,17 +22,12 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit, onCancel 
   const [size, setSize] = useState<number>(5);
   const [category, setCategory] = useState<string>('');
   const [gameMode, setGameMode] = useState<'joined' | 'individual'>('joined');
-  const [items, setItems] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (category.trim() && items.length > 0) {
+    if (category.trim()) {
       onSubmit(size, category.trim(), gameMode);
     }
-  };
-
-  const handleRemoveItem = (index: number) => {
-    setItems(items.filter((_, i) => i !== index));
   };
 
   return (
@@ -110,18 +104,6 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit, onCancel 
                 </Select>
               </FormControl>
 
-              {/* Items List */}
-              <ItemList
-                items={items}
-                maxItems={size * size}
-                onAddItem={(item) => {
-                  setItems([...items, item]);
-                }}
-                onRemoveItem={handleRemoveItem}
-                title="Items"
-                showAddButton={true}
-              />
-
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
                   variant="outlined"
@@ -136,7 +118,7 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit, onCancel 
                   variant="contained"
                   size="large"
                   fullWidth
-                  disabled={!category.trim() || items.length === 0}
+                  disabled={!category.trim()}
                 >
                   Create Game
                 </Button>
