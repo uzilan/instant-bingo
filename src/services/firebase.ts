@@ -111,7 +111,7 @@ export const listenToGames = (playerId: string, callback: (games: Game[]) => voi
 };
 
 // Player functions
-export const addPlayerToGame = async (gameId: string, playerId: string, _playerName: string): Promise<void> => {
+export const addPlayerToGame = async (gameId: string, playerId: string): Promise<void> => {
   const gameRef = doc(db, 'games', gameId);
   const game = await getGame(gameId);
   
@@ -148,7 +148,7 @@ export const addItemToGame = async (gameId: string, item: string, playerId: stri
   }
 };
 
-export const removeItemFromGame = async (gameId: string, itemIndex: number, _playerId: string): Promise<void> => {
+export const removeItemFromGame = async (gameId: string, itemIndex: number): Promise<void> => {
   const gameRef = doc(db, 'games', gameId);
   const game = await getGame(gameId);
   

@@ -13,9 +13,6 @@ vi.mock('../services/firebase', () => ({
 
 const mockOnCreateNew = vi.fn();
 const mockOnGameClick = vi.fn();
-const mockHandleCopyInviteCode = vi.fn();
-const mockHandleShareGame = vi.fn();
-const mockHandleShowQR = vi.fn();
 
 const renderWithTheme = (component: React.ReactElement) => {
   return render(

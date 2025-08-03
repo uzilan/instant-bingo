@@ -91,7 +91,7 @@ describe('AuthButtons - Logged In', () => {
   test('shows user avatar when authenticated', () => {
     renderWithTheme(
       <AuthButtons
-        user={mockUser as any}
+        user={mockUser as FirebaseUser}
         onUserChange={mockOnUserChange}
       />
     );
@@ -103,7 +103,7 @@ describe('AuthButtons - Logged In', () => {
   test('does not show login button when authenticated', () => {
     renderWithTheme(
       <AuthButtons
-        user={mockUser as any}
+        user={mockUser as FirebaseUser}
         onUserChange={mockOnUserChange}
       />
     );
@@ -114,7 +114,7 @@ describe('AuthButtons - Logged In', () => {
   test('shows logout option in user menu', () => {
     renderWithTheme(
       <AuthButtons
-        user={mockUser as any}
+        user={mockUser as FirebaseUser}
         onUserChange={mockOnUserChange}
       />
     );

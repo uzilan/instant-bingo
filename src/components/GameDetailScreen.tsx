@@ -168,7 +168,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         </Typography>
         <Chip
           label={getStatusText(game.status)}
-          color={getStatusColor(game.status) as any}
+          color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           size="small"
         />
                             {isGameOwner(game, getCurrentUser()?.id || '') && (

@@ -156,7 +156,7 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Chip
                         label={getStatusText(game.status)}
-                        color={getStatusColor(game.status) as any}
+                        color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         size="small"
                       />
                                                         {isGameOwner(game, getCurrentUser()?.id || '') && (
