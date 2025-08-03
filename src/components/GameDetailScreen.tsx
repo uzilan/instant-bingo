@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Card,
@@ -12,92 +12,97 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  CircularProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   PlayArrow as PlayIcon,
 } from '@mui/icons-material';
+import { useParams, useNavigate } from 'react-router-dom';
 import InviteDetails from './InviteDetails';
-import { isGameOwner } from '../services/firebase';
-import { getCurrentUser } from '../services/userService';
+import { isGameOwner, listenToGame } from '../services/firebase';
 import ItemList from './ItemList';
+import type { Game } from '../services/firebase';
 
-interface GameDetail {
-  id: string;
-  category: string;
-  size: number;
-  status: 'creating' | 'active' | 'completed';
-  players: string[];
-  maxPlayers: number;
-  createdAt: string;
-  ownerId: string;
-  items: string[];
-  inviteCode?: string;
-  gameMode: 'joined' | 'individual';
-  playerItemCounts?: { [playerId: string]: number };
-}
+// Using the Game interface from Firebase instead of GameDetail
 
 interface GameDetailScreenProps {
-  gameId: string;
-  onBack: () => void;
   onStartGame: (gameId: string) => void;
   onAddItem: (gameId: string, item: string) => void;
   onShareGame: (gameId: string) => void;
+  currentUserId?: string;
 }
 
 const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
-  gameId,
-  onBack,
   onStartGame,
   onAddItem,
   onShareGame,
+  currentUserId,
 }) => {
+  const { gameId } = useParams<{ gameId: string }>();
+  const navigate = useNavigate();
+  const [game, setGame] = useState<Game | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data for demonstration - change gameId to test different states
-  const game: GameDetail = {
-    id: gameId,
-    category: 'Movies',
-    size: 5,
-    status: gameId === '1' ? 'creating' : gameId === '2' ? 'active' : 'completed',
-    players: ['Alice', 'Bob', 'Charlie'],
-    maxPlayers: 4,
-    createdAt: '2024-01-15',
-    ownerId: 'user_1',
-    gameMode: gameId === '1' ? 'individual' : 'joined',
-    items: [
-      'The Matrix',
-      'Inception',
-      'Pulp Fiction',
-      'The Godfather',
-      'Fight Club',
-      'Forrest Gump',
-      'Goodfellas',
-      'The Silence of the Lambs',
-      'The Shawshank Redemption',
-      'The Dark Knight',
-      'Schindler\'s List',
-      'The Good, the Bad and the Ugly',
-      '12 Angry Men',
-      'The Lord of the Rings',
-      'Star Wars',
-      'The Usual Suspects',
-      'One Flew Over the Cuckoo\'s Nest',
-      'Casablanca',
-      'The Empire Strikes Back',
-      'Good Will Hunting',
-      'Raiders of the Lost Ark',
-      'The Princess Bride',
-      'Back to the Future',
-      'The Lion King',
-      'Toy Story',
-    ],
-    inviteCode: gameId === '1' ? 'ABC123' : undefined,
-    playerItemCounts: gameId === '1' ? {
-      'Alice': 25,
-      'Bob': 18,
-      'Charlie': 22
-    } : undefined,
-  };
+  useEffect(() => {
+    if (gameId) {
+      const unsubscribe = listenToGame(gameId, (gameData) => {
+        setGame(gameData);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    }
+  }, [gameId]);
+
+  if (!gameId) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        gap: 2
+      }}>
+        <Typography variant="h6">Game ID not found</Typography>
+        <Button onClick={() => navigate('/')} variant="outlined">
+          Back to Overview
+        </Button>
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh' 
+      }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!game) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        gap: 2
+      }}>
+        <Typography variant="h6">Game not found</Typography>
+        <Button onClick={() => navigate('/')} variant="outlined">
+          Back to Overview
+        </Button>
+      </Box>
+    );
+  }
 
   const handleRemoveItem = (index: number) => {
     // TODO: Implement remove item functionality
@@ -116,7 +121,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     console.log('Show QR code for:', game.inviteCode);
   };
 
-  const getStatusColor = (status: GameDetail['status']) => {
+  const getStatusColor = (status: Game['status']) => {
     switch (status) {
       case 'creating':
         return 'warning';
@@ -129,7 +134,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     }
   };
 
-  const getStatusText = (status: GameDetail['status']) => {
+  const getStatusText = (status: Game['status']) => {
     switch (status) {
       case 'creating':
         return 'Setting up';
@@ -142,7 +147,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     }
   };
 
-  const canStartGame = isGameOwner(game, getCurrentUser()?.id || '') && game.status === 'creating' && game.items.length >= game.size * game.size;
+  const canStartGame = isGameOwner(game, currentUserId || '') && game.status === 'creating' && game.items.length >= game.size * game.size;
 
   return (
     <Box
@@ -160,7 +165,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     >
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-        <IconButton onClick={onBack}>
+                        <IconButton onClick={() => navigate('/')}>
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4" component="h1">
@@ -171,9 +176,9 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           size="small"
         />
-                            {isGameOwner(game, getCurrentUser()?.id || '') && (
-                      <Chip label="Owner" size="small" variant="outlined" />
-                    )}
+                                                    {isGameOwner(game, currentUserId || '') && (
+                          <Chip label="Owner" size="small" variant="outlined" />
+                        )}
       </Box>
 
       {/* Game Info and Items - Stacked Vertically */}
@@ -185,12 +190,13 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
               <Typography variant="h6">
                 Game Details
               </Typography>
-              {game.status === 'creating' && isGameOwner(game, getCurrentUser()?.id || '') && (
+              {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
                 <InviteDetails
                   inviteCode={game.inviteCode || ''}
                   onCopy={handleCopyInviteCode}
                   onShare={() => onShareGame(gameId)}
                   onShowQR={handleShowQR}
+                  gameCategory={game.category}
                 />
               )}
             </Box>
@@ -213,12 +219,12 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
                     Players
                   </Typography>
                   <List dense>
-                    {game.players.map((player, index) => (
+                    {game.players.map((playerId, index) => (
                       <ListItem key={index} sx={{ px: 0 }}>
                         <ListItemText 
-                          primary={player}
+                          primary={game.playerNames?.[playerId] || 'Unknown Player'}
                           secondary={game.gameMode === 'individual' && game.status === 'creating' 
-                            ? `${game.playerItemCounts?.[player] || 0}/${game.size * game.size} items`
+                            ? `${game.playerItemCounts?.[playerId] || 0}/${game.size * game.size} items`
                             : undefined
                           }
                         />
@@ -245,7 +251,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       </Box>
 
       {/* Action Buttons */}
-      {game.status === 'creating' && isGameOwner(game, getCurrentUser()?.id || '') && (
+      {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="contained"

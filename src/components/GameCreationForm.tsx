@@ -12,13 +12,14 @@ import {
   Button,
   Stack,
 } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 interface GameCreationFormProps {
   onSubmit: (size: number, category: string, gameMode: 'joined' | 'individual') => void;
-  onCancel: () => void;
 }
 
-const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit, onCancel }) => {
+const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
+  const navigate = useNavigate();
   const [size, setSize] = useState<number>(5);
   const [category, setCategory] = useState<string>('');
   const [gameMode, setGameMode] = useState<'joined' | 'individual'>('joined');
@@ -109,7 +110,7 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit, onCancel 
                   variant="outlined"
                   size="large"
                   fullWidth
-                  onClick={onCancel}
+                  onClick={() => navigate('/')}
                 >
                   Cancel
                 </Button>

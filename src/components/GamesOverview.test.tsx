@@ -12,7 +12,6 @@ vi.mock('../services/firebase', () => ({
 }));
 
 const mockOnCreateNew = vi.fn();
-const mockOnGameClick = vi.fn();
 
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
@@ -32,7 +31,6 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
-        onGameClick={mockOnGameClick}
         isAuthenticated={false}
       />
     );
@@ -63,7 +61,6 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
-        onGameClick={mockOnGameClick}
         isAuthenticated={false}
       />
     );
@@ -77,7 +74,6 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
-        onGameClick={mockOnGameClick}
         isAuthenticated={false}
       />
     );
@@ -90,7 +86,6 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
-        onGameClick={mockOnGameClick}
         isAuthenticated={true}
       />
     );
@@ -108,6 +103,7 @@ describe('GamesOverview - Not Logged In', () => {
         size: 5,
         status: 'creating' as const,
         players: ['user1'],
+        playerNames: { 'user1': 'Test Player' },
         maxPlayers: 4,
         createdAt: new Date().toISOString(),
         gameMode: 'joined' as const,
@@ -121,7 +117,6 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={mockGames}
         onCreateNew={mockOnCreateNew}
-        onGameClick={mockOnGameClick}
         isAuthenticated={false}
       />
     );

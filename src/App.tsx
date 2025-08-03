@@ -1,20 +1,18 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline, Box } from '@mui/material';
 import { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import GamesOverview from './components/GamesOverview';
 import GameDetailScreen from './components/GameDetailScreen';
 import GameCreationForm from './components/GameCreationForm';
+import JoinGameHandler from './components/JoinGameHandler';
 import { theme } from './theme';
 import { listenToGames, createGame, startGame, addItemToGame, generateInviteCode, onAuthStateChange } from './services/firebase';
 import type { Game } from './services/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
 import AuthButtons from './components/AuthButtons';
 
-type Screen = 'overview' | 'detail' | 'creation';
-
 function App() {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('overview');
-  const [selectedGameId, setSelectedGameId] = useState<string>('');
   const [games, setGames] = useState<Game[]>([]);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
 
@@ -40,7 +38,8 @@ function App() {
   }, [firebaseUser]);
 
   const handleCreateNew = () => {
-    setCurrentScreen('creation');
+    // Navigate to creation screen
+    window.location.href = '/create';
   };
 
   const handleGameCreation = async (size: number, category: string, gameMode: 'joined' | 'individual') => {
@@ -51,12 +50,16 @@ function App() {
 
     try {
       const inviteCode = generateInviteCode();
+      const playerName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Anonymous';
       const gameData = {
         category,
         size,
         gameMode,
         status: 'creating' as const,
         players: [firebaseUser.uid],
+        playerNames: {
+          [firebaseUser.uid]: playerName
+        },
         maxPlayers: 10,
         ownerId: firebaseUser.uid,
         items: [],
@@ -68,20 +71,10 @@ function App() {
 
       const gameId = await createGame(gameData);
       console.log('Game created:', gameId);
-      setCurrentScreen('overview');
+      window.location.href = '/';
     } catch (error) {
       console.error('Error creating game:', error);
     }
-  };
-
-  const handleGameClick = (gameId: string) => {
-    setSelectedGameId(gameId);
-    setCurrentScreen('detail');
-  };
-
-  const handleBackToOverview = () => {
-    setCurrentScreen('overview');
-    setSelectedGameId('');
   };
 
   const handleStartGame = async (gameId: string) => {
@@ -112,59 +105,52 @@ function App() {
     // TODO: Implement share functionality
   };
 
-  const renderScreen = () => {
-    switch (currentScreen) {
-                    case 'overview':
-                return (
-                  <GamesOverview
-                    games={games}
-                    onCreateNew={handleCreateNew}
-                    onGameClick={handleGameClick}
-                    isAuthenticated={!!firebaseUser}
-                  />
-                );
-      case 'detail':
-        return (
-          <GameDetailScreen
-            gameId={selectedGameId}
-            onBack={handleBackToOverview}
-            onStartGame={handleStartGame}
-            onAddItem={handleAddItem}
-            onShareGame={handleShareGame}
-          />
-        );
-      case 'creation':
-        return (
-          <GameCreationForm 
-            onSubmit={handleGameCreation} 
-            onCancel={() => setCurrentScreen('overview')}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ position: 'relative', width: '100vw', height: '100vh' }}>
-        {/* Auth Buttons - Fixed position in top right */}
-        <Box sx={{ 
-          position: 'fixed', 
-          top: 16, 
-          right: 16, 
-          zIndex: 1000 
-        }}>
-          <AuthButtons 
-            user={firebaseUser} 
-            onUserChange={setFirebaseUser} 
-          />
+      <Router>
+        <Box sx={{ position: 'relative', width: '100vw', height: '100vh' }}>
+          {/* Auth Buttons - Fixed position in top right */}
+          <Box sx={{ 
+            position: 'fixed', 
+            top: 16, 
+            right: 16, 
+            zIndex: 1000 
+          }}>
+            <AuthButtons 
+              user={firebaseUser} 
+              onUserChange={setFirebaseUser} 
+            />
+          </Box>
+          
+          {/* Main Content */}
+          <Routes>
+            <Route path="/" element={
+              <GamesOverview
+                games={games}
+                onCreateNew={handleCreateNew}
+                isAuthenticated={!!firebaseUser}
+                currentUserId={firebaseUser?.uid}
+              />
+            } />
+            <Route path="/game/:gameId" element={
+              <GameDetailScreen
+                onStartGame={handleStartGame}
+                onAddItem={handleAddItem}
+                onShareGame={handleShareGame}
+                currentUserId={firebaseUser?.uid}
+              />
+            } />
+            <Route path="/create" element={
+              <GameCreationForm 
+                onSubmit={handleGameCreation} 
+              />
+            } />
+            <Route path="/join/:inviteCode" element={<JoinGameHandler />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Box>
-        
-        {/* Main Content */}
-        {renderScreen()}
-      </Box>
+      </Router>
     </ThemeProvider>
   );
 }

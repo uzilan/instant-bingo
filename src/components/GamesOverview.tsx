@@ -9,25 +9,26 @@ import {
   Stack,
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import InviteDetails from './InviteDetails';
 import type { Game } from '../services/firebase';
 import { isGameOwner } from '../services/firebase';
-import { getCurrentUser } from '../services/userService';
 import AppInfo from './AppInfo';
 
 interface GamesOverviewProps {
   games: Game[];
   onCreateNew: () => void;
-  onGameClick: (gameId: string) => void;
   isAuthenticated: boolean;
+  currentUserId?: string;
 }
 
 const GamesOverview: React.FC<GamesOverviewProps> = ({
   games,
   onCreateNew,
-  onGameClick,
   isAuthenticated,
+  currentUserId,
 }) => {
+  const navigate = useNavigate();
 
   const getStatusColor = (status: Game['status']) => {
     switch (status) {
@@ -112,7 +113,7 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         {games.map((game) => (
             <Card 
               key={game.id}
-              onClick={() => onGameClick(game.id)}
+                              onClick={() => navigate(`/game/${game.id}`)}
               sx={{
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -134,17 +135,18 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         <Typography variant="h6" component="h2">
                           {game.category}
                         </Typography>
-                        {game.status === 'creating' && isGameOwner(game, getCurrentUser()?.id || '') && game.inviteCode && (
+                        {game.status === 'creating' && isGameOwner(game, currentUserId || '') && game.inviteCode && (
                           <InviteDetails
                             inviteCode={game.inviteCode}
                             onCopy={() => handleCopyInviteCode(game.inviteCode!)}
                             onShare={() => handleShareGame(game.id)}
                             onShowQR={() => handleShowQR(game.inviteCode!)}
+                            gameCategory={game.category}
                           />
                         )}
                       </Box>
                       <Typography variant="body2" color="text.secondary">
-                        {game.size} x {game.size} board • {game.players} players
+                        {game.size} x {game.size} board • {game.players.length} players
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Created {new Date(game.createdAt).toLocaleDateString()}
@@ -159,9 +161,9 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         size="small"
                       />
-                                                        {isGameOwner(game, getCurrentUser()?.id || '') && (
-                                    <Chip label="Owner" size="small" variant="outlined" />
-                                  )}
+                                                                              {isGameOwner(game, currentUserId || '') && (
+                        <Chip label="Owner" size="small" variant="outlined" />
+                      )}
                     </Stack>
                   </Box>
                 </Box>

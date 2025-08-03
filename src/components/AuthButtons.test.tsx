@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { theme } from '../theme';
 import AuthButtons from './AuthButtons';
 import { vi } from 'vitest';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 // Mock Firebase services
 vi.mock('../services/firebase', () => ({

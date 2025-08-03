@@ -17,6 +17,7 @@ export interface Game {
   size: number;
   status: 'creating' | 'active' | 'completed';
   players: string[];
+  playerNames: { [playerId: string]: string };
   maxPlayers: number;
   createdAt: string;
   ownerId: string;
@@ -116,8 +117,15 @@ export const addPlayerToGame = async (gameId: string, playerId: string): Promise
   const game = await getGame(gameId);
   
   if (game && !game.players.includes(playerId)) {
+    const currentUser = auth.currentUser;
+    const playerName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Anonymous';
+    
     await updateDoc(gameRef, {
       players: [...game.players, playerId],
+      playerNames: {
+        ...game.playerNames,
+        [playerId]: playerName
+      },
       playerItemCounts: {
         ...game.playerItemCounts,
         [playerId]: 0
@@ -179,6 +187,31 @@ export const findGameByInviteCode = async (inviteCode: string): Promise<Game | n
   return null;
 };
 
+export const joinGameByInviteCode = async (inviteCode: string, playerId: string): Promise<string> => {
+  const game = await findGameByInviteCode(inviteCode);
+  
+  if (!game) {
+    throw new Error('Game not found with this invite code');
+  }
+  
+  if (game.status !== 'creating') {
+    throw new Error('Game has already started');
+  }
+  
+  if (game.players.includes(playerId)) {
+    throw new Error('You are already in this game');
+  }
+  
+  if (game.players.length >= game.maxPlayers) {
+    throw new Error('Game is full');
+  }
+  
+  // Add player to game
+  await addPlayerToGame(game.id, playerId);
+  
+  return game.id;
+};
+
 // Authentication functions
 export const signInWithGoogle = async (): Promise<FirebaseUser> => {
   const result = await signInWithPopup(auth, googleProvider);
@@ -195,6 +228,12 @@ export const getCurrentAuthUser = (): FirebaseUser | null => {
 
 export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {
   return onAuthStateChanged(auth, callback);
+};
+
+// User display name functions
+export const getCurrentUserDisplayName = (): string => {
+  const user = auth.currentUser;
+  return user?.displayName || user?.email?.split('@')[0] || 'Anonymous';
 };
 
 export default db; 
