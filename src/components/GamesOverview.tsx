@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -7,8 +7,13 @@ import {
   Button,
   Chip,
   Stack,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import InviteDetails from './InviteDetails';
 import type { Game } from '../services/firebase';
@@ -18,6 +23,7 @@ import AppInfo from './AppInfo';
 interface GamesOverviewProps {
   games: Game[];
   onCreateNew: () => void;
+  onDeleteGame: (gameId: string) => void;
   isAuthenticated: boolean;
   currentUserId?: string;
 }
@@ -25,10 +31,13 @@ interface GamesOverviewProps {
 const GamesOverview: React.FC<GamesOverviewProps> = ({
   games,
   onCreateNew,
+  onDeleteGame,
   isAuthenticated,
   currentUserId,
 }) => {
   const navigate = useNavigate();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
 
   const getStatusColor = (status: Game['status']) => {
     switch (status) {
@@ -38,6 +47,8 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
         return 'success';
       case 'completed':
         return 'default';
+      case 'cancelled':
+        return 'error';
       default:
         return 'default';
     }
@@ -51,6 +62,8 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
         return 'In progress';
       case 'completed':
         return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
       default:
         return 'Unknown';
     }
@@ -69,6 +82,25 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
   const handleShowQR = (inviteCode: string) => {
     console.log('Show QR code for:', inviteCode);
     // TODO: Show QR code modal
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    setGameToDelete(game);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (gameToDelete) {
+      onDeleteGame(gameToDelete.id);
+      setDeleteDialogOpen(false);
+      setGameToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setGameToDelete(null);
   };
 
 
@@ -161,8 +193,18 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
                         size="small"
                       />
-                                                                              {isGameOwner(game, currentUserId || '') && (
+                      {isGameOwner(game, currentUserId || '') && (
                         <Chip label="Owner" size="small" variant="outlined" />
+                      )}
+                      {(game.status === 'cancelled' || game.status === 'completed') && isGameOwner(game, currentUserId || '') && (
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={(e) => handleDeleteClick(e, game)}
+                          sx={{ ml: 1 }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
                       )}
                     </Stack>
                   </Box>
@@ -173,6 +215,31 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                       </Stack>
                     )}
                   </Box>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={handleCancelDelete}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Delete Game
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete "{gameToDelete?.category}"? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} variant="contained" color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

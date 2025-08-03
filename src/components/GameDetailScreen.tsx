@@ -13,6 +13,10 @@ import {
   ListItemText,
   IconButton,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -30,6 +34,7 @@ interface GameDetailScreenProps {
   onStartGame: (gameId: string) => void;
   onAddItem: (gameId: string, item: string) => void;
   onShareGame: (gameId: string) => void;
+  onCancelGame: (gameId: string) => void;
   currentUserId?: string;
 }
 
@@ -37,12 +42,14 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   onStartGame,
   onAddItem,
   onShareGame,
+  onCancelGame,
   currentUserId,
 }) => {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   useEffect(() => {
     if (gameId) {
@@ -129,6 +136,8 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         return 'success';
       case 'completed':
         return 'default';
+      case 'cancelled':
+        return 'error';
       default:
         return 'default';
     }
@@ -142,12 +151,27 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         return 'In progress';
       case 'completed':
         return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
       default:
         return 'Unknown';
     }
   };
 
   const canStartGame = isGameOwner(game, currentUserId || '') && game.status === 'creating' && game.items.length >= game.size * game.size;
+
+  const handleCancelClick = () => {
+    setCancelDialogOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    onCancelGame(gameId);
+    setCancelDialogOpen(false);
+  };
+
+  const handleCancelCancel = () => {
+    setCancelDialogOpen(false);
+  };
 
   return (
     <Box
@@ -254,6 +278,14 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
+            variant="outlined"
+            color="error"
+            fullWidth
+            onClick={handleCancelClick}
+          >
+            Cancel Game
+          </Button>
+          <Button
             variant="contained"
             fullWidth
             disabled={!canStartGame}
@@ -264,8 +296,45 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Button>
         </Box>
       )}
+      
+      {/* Cancel button for active games */}
+      {game.status === 'active' && isGameOwner(game, currentUserId || '') && (
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            color="error"
+            fullWidth
+            onClick={handleCancelClick}
+          >
+            Cancel Game
+          </Button>
+        </Box>
+      )}
 
-
+      {/* Cancel Confirmation Dialog */}
+      <Dialog
+        open={cancelDialogOpen}
+        onClose={handleCancelCancel}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Cancel Game
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to cancel "{game?.category}"? This will end the game for all players and cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelCancel} variant="contained" color="primary">
+            Keep Game
+          </Button>
+          <Button onClick={handleConfirmCancel} color="error" variant="contained">
+            Cancel Game
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

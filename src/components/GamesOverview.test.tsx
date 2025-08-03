@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
+import { BrowserRouter } from 'react-router-dom';
 import { theme } from '../theme';
 import GamesOverview from './GamesOverview';
 import { vi } from 'vitest';
@@ -12,12 +13,15 @@ vi.mock('../services/firebase', () => ({
 }));
 
 const mockOnCreateNew = vi.fn();
+const mockOnDeleteGame = vi.fn();
 
 const renderWithTheme = (component: React.ReactElement) => {
   return render(
-    <ThemeProvider theme={theme}>
-      {component}
-    </ThemeProvider>
+    <BrowserRouter>
+      <ThemeProvider theme={theme}>
+        {component}
+      </ThemeProvider>
+    </BrowserRouter>
   );
 };
 
@@ -31,6 +35,7 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
+        onDeleteGame={mockOnDeleteGame}
         isAuthenticated={false}
       />
     );
@@ -61,6 +66,7 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
+        onDeleteGame={mockOnDeleteGame}
         isAuthenticated={false}
       />
     );
@@ -74,6 +80,7 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
+        onDeleteGame={mockOnDeleteGame}
         isAuthenticated={false}
       />
     );
@@ -86,6 +93,7 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={[]}
         onCreateNew={mockOnCreateNew}
+        onDeleteGame={mockOnDeleteGame}
         isAuthenticated={true}
       />
     );
@@ -117,6 +125,7 @@ describe('GamesOverview - Not Logged In', () => {
       <GamesOverview
         games={mockGames}
         onCreateNew={mockOnCreateNew}
+        onDeleteGame={mockOnDeleteGame}
         isAuthenticated={false}
       />
     );

@@ -15,7 +15,7 @@ export interface Game {
   id: string;
   category: string;
   size: number;
-  status: 'creating' | 'active' | 'completed';
+  status: 'creating' | 'active' | 'completed' | 'cancelled';
   players: string[];
   playerNames: { [playerId: string]: string };
   maxPlayers: number;
@@ -169,6 +169,11 @@ export const removeItemFromGame = async (gameId: string, itemIndex: number): Pro
 export const startGame = async (gameId: string): Promise<void> => {
   const gameRef = doc(db, 'games', gameId);
   await updateDoc(gameRef, { status: 'active' });
+};
+
+export const cancelGame = async (gameId: string): Promise<void> => {
+  const gameRef = doc(db, 'games', gameId);
+  await updateDoc(gameRef, { status: 'cancelled' });
 };
 
 // Utility functions

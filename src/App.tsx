@@ -7,7 +7,7 @@ import GameDetailScreen from './components/GameDetailScreen';
 import GameCreationForm from './components/GameCreationForm';
 import JoinGameHandler from './components/JoinGameHandler';
 import { theme } from './theme';
-import { listenToGames, createGame, startGame, addItemToGame, generateInviteCode, onAuthStateChange } from './services/firebase';
+import { listenToGames, createGame, startGame, addItemToGame, generateInviteCode, onAuthStateChange, cancelGame, deleteGame } from './services/firebase';
 import type { Game } from './services/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
 import AuthButtons from './components/AuthButtons';
@@ -105,6 +105,24 @@ function App() {
     // TODO: Implement share functionality
   };
 
+  const handleCancelGame = async (gameId: string) => {
+    try {
+      await cancelGame(gameId);
+      console.log('Game cancelled:', gameId);
+    } catch (error) {
+      console.error('Error cancelling game:', error);
+    }
+  };
+
+  const handleDeleteGame = async (gameId: string) => {
+    try {
+      await deleteGame(gameId);
+      console.log('Game deleted:', gameId);
+    } catch (error) {
+      console.error('Error deleting game:', error);
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -129,6 +147,7 @@ function App() {
               <GamesOverview
                 games={games}
                 onCreateNew={handleCreateNew}
+                onDeleteGame={handleDeleteGame}
                 isAuthenticated={!!firebaseUser}
                 currentUserId={firebaseUser?.uid}
               />
@@ -138,6 +157,7 @@ function App() {
                 onStartGame={handleStartGame}
                 onAddItem={handleAddItem}
                 onShareGame={handleShareGame}
+                onCancelGame={handleCancelGame}
                 currentUserId={firebaseUser?.uid}
               />
             } />
