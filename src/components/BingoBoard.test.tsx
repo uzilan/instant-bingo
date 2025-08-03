@@ -515,18 +515,19 @@ describe('BingoBoard', () => {
       expect(screen.getByText('Item 2')).toBeInTheDocument();
     });
 
-    it('handles null or undefined values gracefully', () => {
-      const nullBoard = {
-        '0-0': null as string | null,
-        '0-1': undefined as string | undefined,
+    it('handles empty string values', () => {
+      const emptyStringBoard = {
+        '0-0': '',
+        '0-1': 'Item 2',
         '0-2': 'Item 3',
       };
       
       renderWithTheme(
-        <BingoBoard board={nullBoard} markedCells={{}} />
+        <BingoBoard board={emptyStringBoard} markedCells={{}} />
       );
       
       // Should render without errors
+      expect(screen.getByText('Item 2')).toBeInTheDocument();
       expect(screen.getByText('Item 3')).toBeInTheDocument();
     });
   });

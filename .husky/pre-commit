@@ -23,4 +23,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+echo "🏗️ Building project..."
+npm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed. Please fix build errors before committing."
+  exit 1
+fi
+
 echo "✅ All pre-commit checks passed!"
