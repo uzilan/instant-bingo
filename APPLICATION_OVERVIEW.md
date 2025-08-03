@@ -122,6 +122,7 @@ Instant Bingo 2 is a collaborative bingo application designed for small groups (
 - **Lint Before Committing**: Run linters and fix all issues
 - **Documentation**: Update README and comments for new features
 - **Git Workflow**: Meaningful commits and clean history
+- **Early Returns**: Use early returns to avoid nested if statements and improve code readability
 
 ## Future Enhancements
 

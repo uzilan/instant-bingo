@@ -12,6 +12,8 @@ import type { Game } from './services/firebase';
 import type { User as FirebaseUser } from 'firebase/auth';
 import AuthButtons from './components/AuthButtons';
 
+
+
 function App() {
   const [games, setGames] = useState<Game[]>([]);
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -69,8 +71,7 @@ function App() {
         }
       };
 
-      const gameId = await createGame(gameData);
-      console.log('Game created:', gameId);
+      await createGame(gameData);
       window.location.href = '/';
     } catch (error) {
       console.error('Error creating game:', error);
@@ -80,7 +81,6 @@ function App() {
   const handleStartGame = async (gameId: string) => {
     try {
       await startGame(gameId);
-      console.log('Game started:', gameId);
     } catch (error) {
       console.error('Error starting game:', error);
     }
@@ -94,7 +94,6 @@ function App() {
 
     try {
       await addItemToGame(gameId, item, firebaseUser.uid);
-      console.log('Item added:', item);
     } catch (error) {
       console.error('Error adding item:', error);
     }
@@ -105,7 +104,6 @@ function App() {
   const handleCancelGame = async (gameId: string) => {
     try {
       await cancelGame(gameId);
-      console.log('Game cancelled:', gameId);
     } catch (error) {
       console.error('Error cancelling game:', error);
     }
@@ -114,7 +112,6 @@ function App() {
   const handleDeleteGame = async (gameId: string) => {
     try {
       await deleteGame(gameId);
-      console.log('Game deleted:', gameId);
     } catch (error) {
       console.error('Error deleting game:', error);
     }
@@ -125,29 +122,32 @@ function App() {
       <CssBaseline />
       <Router>
         <Box sx={{ position: 'relative', width: '100vw', height: '100vh' }}>
-          {/* Auth Buttons - Fixed position in top right */}
-          <Box sx={{ 
-            position: 'fixed', 
-            top: 16, 
-            right: 16, 
-            zIndex: 1000 
-          }}>
-            <AuthButtons 
-              user={firebaseUser} 
-              onUserChange={setFirebaseUser} 
-            />
-          </Box>
+
           
           {/* Main Content */}
           <Routes>
             <Route path="/" element={
-              <GamesOverview
-                games={games}
-                onCreateNew={handleCreateNew}
-                onDeleteGame={handleDeleteGame}
-                isAuthenticated={!!firebaseUser}
-                currentUserId={firebaseUser?.uid}
-              />
+              <>
+                <Box sx={{ 
+                  position: 'fixed', 
+                  top: 16, 
+                  right: 16, 
+                  zIndex: 1000 
+                }}>
+                  <AuthButtons 
+                    user={firebaseUser} 
+                    onUserChange={setFirebaseUser}
+                    showLogout={true}
+                  />
+                </Box>
+                <GamesOverview
+                  games={games}
+                  onCreateNew={handleCreateNew}
+                  onDeleteGame={handleDeleteGame}
+                  isAuthenticated={!!firebaseUser}
+                  currentUserId={firebaseUser?.uid}
+                />
+              </>
             } />
             <Route path="/game/:gameId" element={
               <GameDetailScreen

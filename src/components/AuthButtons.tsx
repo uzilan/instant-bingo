@@ -19,9 +19,10 @@ import type { User as FirebaseUser } from 'firebase/auth';
 interface AuthButtonsProps {
   user: FirebaseUser | null;
   onUserChange: (user: FirebaseUser | null) => void;
+  showLogout?: boolean;
 }
 
-const AuthButtons: React.FC<AuthButtonsProps> = ({ user, onUserChange }) => {
+const AuthButtons: React.FC<AuthButtonsProps> = ({ user, onUserChange, showLogout = true }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleLogin = async () => {
@@ -67,7 +68,7 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({ user, onUserChange }) => {
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
       <IconButton
-        onClick={handleMenuOpen}
+        onClick={showLogout ? handleMenuOpen : undefined}
         sx={{ color: 'white' }}
       >
         {user.photoURL ? (
@@ -81,29 +82,31 @@ const AuthButtons: React.FC<AuthButtonsProps> = ({ user, onUserChange }) => {
         )}
       </IconButton>
       
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-      >
-        <MenuItem disabled>
-          <Typography variant="body2">
-            {user.displayName || user.email}
-          </Typography>
-        </MenuItem>
-        <MenuItem onClick={handleLogout}>
-          <LogoutIcon sx={{ mr: 1 }} />
-          Sign Out
-        </MenuItem>
-      </Menu>
+      {showLogout && (
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+        >
+          <MenuItem disabled>
+            <Typography variant="body2">
+              {user.displayName || user.email}
+            </Typography>
+          </MenuItem>
+          <MenuItem onClick={handleLogout}>
+            <LogoutIcon sx={{ mr: 1 }} />
+            Sign Out
+          </MenuItem>
+        </Menu>
+      )}
     </Box>
   );
 };

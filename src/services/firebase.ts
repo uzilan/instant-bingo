@@ -25,6 +25,8 @@ export interface Game {
   inviteCode?: string;
   gameMode: 'joined' | 'individual';
   playerItemCounts?: { [playerId: string]: number };
+  playerBoards?: { [playerId: string]: { [key: string]: string } };
+  playerMarkedCells?: { [playerId: string]: { [key: string]: boolean } };
 }
 
 export interface Player {
@@ -138,21 +140,23 @@ export const addItemToGame = async (gameId: string, item: string, playerId: stri
   const gameRef = doc(db, 'games', gameId);
   const game = await getGame(gameId);
   
-  if (game) {
-    if (game.gameMode === 'joined') {
-      // Add to shared items list
-      const updatedItems = [...game.items, item];
-      await updateDoc(gameRef, { items: updatedItems });
-    } else {
-      // Individual mode - update player's item count
-      const currentCount = game.playerItemCounts?.[playerId] || 0;
-      await updateDoc(gameRef, {
-        playerItemCounts: {
-          ...game.playerItemCounts,
-          [playerId]: currentCount + 1
-        }
-      });
-    }
+  if (!game) {
+    return;
+  }
+
+  if (game.gameMode === 'joined') {
+    // Add to shared items list
+    const updatedItems = [...game.items, item];
+    await updateDoc(gameRef, { items: updatedItems });
+  } else {
+    // Individual mode - update player's item count
+    const currentCount = game.playerItemCounts?.[playerId] || 0;
+    await updateDoc(gameRef, {
+      playerItemCounts: {
+        ...game.playerItemCounts,
+        [playerId]: currentCount + 1
+      }
+    });
   }
 };
 
@@ -160,15 +164,93 @@ export const removeItemFromGame = async (gameId: string, itemIndex: number): Pro
   const gameRef = doc(db, 'games', gameId);
   const game = await getGame(gameId);
   
-  if (game && game.gameMode === 'joined') {
-    const updatedItems = game.items.filter((_, index) => index !== itemIndex);
-    await updateDoc(gameRef, { items: updatedItems });
+  if (!game || game.gameMode !== 'joined') {
+    return;
   }
+  
+  const updatedItems = game.items.filter((_, index) => index !== itemIndex);
+  await updateDoc(gameRef, { items: updatedItems });
+};
+
+// Utility function to generate a random board
+const generateRandomBoard = (items: string[], size: number): { [key: string]: string } => {
+  const shuffledItems = [...items].sort(() => Math.random() - 0.5);
+  const board: { [key: string]: string } = {};
+  
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      const index = i * size + j;
+      board[`${i}-${j}`] = shuffledItems[index] || '';
+    }
+  }
+  
+  return board;
+};
+
+// Utility function to generate marked cells object
+const generateMarkedCells = (size: number): { [key: string]: boolean } => {
+  const markedCells: { [key: string]: boolean } = {};
+  
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      markedCells[`${i}-${j}`] = false;
+    }
+  }
+  
+  return markedCells;
 };
 
 export const startGame = async (gameId: string): Promise<void> => {
   const gameRef = doc(db, 'games', gameId);
-  await updateDoc(gameRef, { status: 'active' });
+  const game = await getGame(gameId);
+  
+  if (!game) {
+    throw new Error('Game not found');
+  }
+  
+  // Generate boards for all players
+  const playerBoards: { [playerId: string]: { [key: string]: string } } = {};
+  const playerMarkedCells: { [playerId: string]: { [key: string]: boolean } } = {};
+  
+  // For joined mode, all players get the same items but in different order
+  if (game.gameMode === 'joined') {
+    game.players.forEach(playerId => {
+      playerBoards[playerId] = generateRandomBoard(game.items, game.size);
+      playerMarkedCells[playerId] = generateMarkedCells(game.size);
+    });
+  } else {
+    // For individual mode, we need to collect all items from all players
+    // This would need to be implemented based on how individual items are stored
+    // For now, we'll use the joined mode approach
+    game.players.forEach(playerId => {
+      playerBoards[playerId] = generateRandomBoard(game.items, game.size);
+      playerMarkedCells[playerId] = generateMarkedCells(game.size);
+    });
+  }
+  
+  await updateDoc(gameRef, { 
+    status: 'active',
+    playerBoards,
+    playerMarkedCells
+  });
+};
+
+export const markCell = async (gameId: string, playerId: string, row: number, col: number): Promise<void> => {
+  const gameRef = doc(db, 'games', gameId);
+  const game = await getGame(gameId);
+  
+  if (!game || !game.playerMarkedCells) {
+    throw new Error('Game not found or boards not generated');
+  }
+  
+  const updatedMarkedCells = { ...game.playerMarkedCells };
+  if (!updatedMarkedCells[playerId]) {
+    return;
+  }
+  
+  const key = `${row}-${col}`;
+  updatedMarkedCells[playerId][key] = !updatedMarkedCells[playerId][key];
+  await updateDoc(gameRef, { playerMarkedCells: updatedMarkedCells });
 };
 
 export const cancelGame = async (gameId: string): Promise<void> => {
@@ -180,20 +262,22 @@ export const leaveGame = async (gameId: string, playerId: string): Promise<void>
   const gameRef = doc(db, 'games', gameId);
   const game = await getGame(gameId);
   
-  if (game && game.players.includes(playerId)) {
-    const updatedPlayers = game.players.filter(id => id !== playerId);
-    const updatedPlayerNames = { ...game.playerNames };
-    const updatedPlayerItemCounts = { ...game.playerItemCounts };
-    
-    delete updatedPlayerNames[playerId];
-    delete updatedPlayerItemCounts[playerId];
-    
-    await updateDoc(gameRef, {
-      players: updatedPlayers,
-      playerNames: updatedPlayerNames,
-      playerItemCounts: updatedPlayerItemCounts
-    });
+  if (!game || !game.players.includes(playerId)) {
+    return;
   }
+  
+  const updatedPlayers = game.players.filter(id => id !== playerId);
+  const updatedPlayerNames = { ...game.playerNames };
+  const updatedPlayerItemCounts = { ...game.playerItemCounts };
+  
+  delete updatedPlayerNames[playerId];
+  delete updatedPlayerItemCounts[playerId];
+  
+  await updateDoc(gameRef, {
+    players: updatedPlayers,
+    playerNames: updatedPlayerNames,
+    playerItemCounts: updatedPlayerItemCounts
+  });
 };
 
 // Utility functions

@@ -7,17 +7,18 @@ import {
   Button,
   Chip,
   Stack,
-  Divider,
   List,
   ListItem,
   ListItemText,
-  IconButton,
   CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Snackbar,
+  Select,
+  MenuItem,
+  IconButton,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -25,11 +26,10 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import InviteDetails from './InviteDetails';
-import { isGameOwner, listenToGame, leaveGame, removeItemFromGame } from '../services/firebase';
+import { isGameOwner, listenToGame, leaveGame, removeItemFromGame, markCell } from '../services/firebase';
 import ItemList from './ItemList';
+import BingoBoard from './BingoBoard';
 import type { Game } from '../services/firebase';
-
-// Using the Game interface from Firebase instead of GameDetail
 
 interface GameDetailScreenProps {
   onStartGame: (gameId: string) => void;
@@ -52,6 +52,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (gameId) {
@@ -119,6 +120,17 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         await removeItemFromGame(gameId, index);
       } catch (error) {
         console.error('Error removing item:', error);
+        // Could add error handling here
+      }
+    }
+  };
+
+  const handleCellClick = async (row: number, col: number) => {
+    if (game && gameId && currentUserId) {
+      try {
+        await markCell(gameId, currentUserId, row, col);
+      } catch (error) {
+        console.error('Error marking cell:', error);
         // Could add error handling here
       }
     }
@@ -210,6 +222,8 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     return game.players.includes(userId) && !isGameOwner(game, userId);
   };
 
+
+
   return (
     <Box
       sx={{
@@ -222,6 +236,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         left: 0,
         p: 1,
         gap: 2,
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
@@ -243,62 +258,74 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       </Box>
 
       {/* Game Info and Items - Stacked Vertically */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0 }}>
-        {/* Game Info */}
-        <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, width: '100%' }}>
-              <Typography variant="h6">
-                Game Details
-              </Typography>
-              {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <InviteDetails
-                    inviteCode={game.inviteCode || ''}
-                    onCopy={handleCopyInviteCode}
-                    gameCategory={game.category}
-                  />
-                </Box>
-              )}
-            </Box>
-            
-            <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {game.size} x {game.size} board • {game.players.length} players
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Created {new Date(game.createdAt).toISOString().split('T')[0]}
-                  </Typography>
-                </Box>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 0.5, 
+        flex: 1,
+      }}>
+                        {/* Game Info - Only show for creating games */}
+        {game.status === 'creating' && (
+          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, width: '100%' }}>
+                <Typography variant="h6">
+                  Game Details
+                </Typography>
+                <InviteDetails
+                  inviteCode={game.inviteCode || ''}
+                  onCopy={handleCopyInviteCode}
+                  gameCategory={game.category}
+                />
+              </Box>
+              
+              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary">
+                      {game.size} x {game.size} board • {game.players.length} players
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Created {new Date(game.createdAt).toISOString().split('T')[0]}
+                    </Typography>
+                  </Box>
 
-                <Divider />
+                  {/* Players List */}
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Players
+                    </Typography>
+                    <List dense>
+                      {game.players.map((playerId, index) => (
+                        <ListItem 
+                          key={index} 
+                          sx={{ 
+                            px: 1, 
+                            border: '1px solid', 
+                            borderColor: 'grey.700', 
+                            borderRadius: 1, 
+                            mb: 1,
+                          }}
+                        >
+                          <ListItemText 
+                            primary={game.playerNames?.[playerId] || 'Unknown Player'}
+                            secondary={
+                              game.gameMode === 'individual' 
+                                ? `${game.playerItemCounts?.[playerId] || 0}/${game.size * game.size} items`
+                                : undefined
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Box>
+                </Stack>
+              </Box>
+            </CardContent>
+          </Card>
+        )}
 
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Players
-                  </Typography>
-                  <List dense>
-                    {game.players.map((playerId, index) => (
-                      <ListItem key={index} sx={{ px: 0 }}>
-                        <ListItemText 
-                          primary={game.playerNames?.[playerId] || 'Unknown Player'}
-                          secondary={game.gameMode === 'individual' && game.status === 'creating' 
-                            ? `${game.playerItemCounts?.[playerId] || 0}/${game.size * game.size} items`
-                            : undefined
-                          }
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-              </Stack>
-            </Box>
-          </CardContent>
-        </Card>
-
-                {/* Items List - Show for all games in creating status */}
+        {/* Items List - Show for all games in creating status */}
         {game.status === 'creating' && (
           <ItemList
             items={game.items}
@@ -308,6 +335,45 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
             title="Items"
             showAddButton={true}
           />
+        )}
+
+        {/* Bingo Board Selector - Show for active games */}
+        {game.status === 'active' && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && (
+          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Select board:
+                </Typography>
+                <Select
+                  value={selectedPlayerId || currentUserId}
+                  onChange={(e) => setSelectedPlayerId(e.target.value)}
+                  size="small"
+                  sx={{ minWidth: 200 }}
+                >
+                  <MenuItem value={currentUserId}>
+                    My Board
+                  </MenuItem>
+                  {game.players
+                    .filter(playerId => playerId !== currentUserId)
+                    .map((playerId) => (
+                      <MenuItem key={playerId} value={playerId}>
+                        {game.playerNames?.[playerId] || 'Unknown Player'}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </Box>
+              
+              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <BingoBoard
+                  board={game.playerBoards[selectedPlayerId || currentUserId]}
+                  markedCells={game.playerMarkedCells?.[selectedPlayerId || currentUserId] || {}}
+                  onCellClick={selectedPlayerId === currentUserId ? handleCellClick : undefined}
+                  size={game.size}
+                />
+              </Box>
+            </CardContent>
+          </Card>
         )}
       </Box>
 
