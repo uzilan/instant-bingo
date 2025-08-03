@@ -1,10 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, onSnapshot, query, where, orderBy } from 'firebase/firestore';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'firebase/auth';
+import type { User as FirebaseUser } from 'firebase/auth';
 import { firebaseConfig } from '../credentials';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 // Game types
 export interface Game {
@@ -173,6 +177,24 @@ export const findGameByInviteCode = async (inviteCode: string): Promise<Game | n
     return querySnapshot.docs[0].data() as Game;
   }
   return null;
+};
+
+// Authentication functions
+export const signInWithGoogle = async (): Promise<FirebaseUser> => {
+  const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
+};
+
+export const signOutUser = async (): Promise<void> => {
+  await signOut(auth);
+};
+
+export const getCurrentAuthUser = (): FirebaseUser | null => {
+  return auth.currentUser;
+};
+
+export const onAuthStateChange = (callback: (user: FirebaseUser | null) => void) => {
+  return onAuthStateChanged(auth, callback);
 };
 
 export default db; 
