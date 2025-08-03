@@ -86,7 +86,7 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
       }}
     >
       {/* Header */}
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <Typography variant="h4" component="h1">
                       Instant Bingo
                     </Typography>
@@ -95,6 +95,7 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         variant="contained"
                         onClick={onCreateNew}
                         startIcon={<AddIcon />}
+                        sx={{ alignSelf: 'flex-start' }}
                       >
                         New Game
                       </Button>
