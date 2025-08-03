@@ -10,62 +10,21 @@ import {
 } from '@mui/material';
 import { Add as AddIcon } from '@mui/icons-material';
 import InviteDetails from './InviteDetails';
-
-interface Game {
-  id: string;
-  category: string;
-  size: number;
-  status: 'creating' | 'active' | 'completed';
-  players: number;
-  maxPlayers: number;
-  createdAt: string;
-  isOwner: boolean;
-  inviteCode?: string;
-}
+import type { Game } from '../services/firebase';
+import { isGameOwner } from '../services/firebase';
+import { getCurrentUser } from '../services/userService';
 
 interface GamesOverviewProps {
+  games: Game[];
   onCreateNew: () => void;
   onGameClick: (gameId: string) => void;
 }
 
 const GamesOverview: React.FC<GamesOverviewProps> = ({
+  games,
   onCreateNew,
   onGameClick,
 }) => {
-  // Mock data for demonstration
-  const games: Game[] = [
-    {
-      id: '1',
-      category: 'Movies',
-      size: 5,
-      status: 'creating',
-      players: 2,
-      maxPlayers: 4,
-      createdAt: '2024-01-15',
-      isOwner: true,
-      inviteCode: 'ABC123',
-    },
-    {
-      id: '2',
-      category: 'Food',
-      size: 4,
-      status: 'active',
-      players: 3,
-      maxPlayers: 3,
-      createdAt: '2024-01-14',
-      isOwner: false,
-    },
-    {
-      id: '3',
-      category: 'Travel',
-      size: 6,
-      status: 'completed',
-      players: 2,
-      maxPlayers: 2,
-      createdAt: '2024-01-10',
-      isOwner: true,
-    },
-  ];
 
   const getStatusColor = (status: Game['status']) => {
     switch (status) {
@@ -166,7 +125,7 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         <Typography variant="h6" component="h2">
                           {game.category}
                         </Typography>
-                        {game.status === 'creating' && game.isOwner && game.inviteCode && (
+                        {game.status === 'creating' && isGameOwner(game, getCurrentUser()?.id || '') && game.inviteCode && (
                           <InviteDetails
                             inviteCode={game.inviteCode}
                             onCopy={() => handleCopyInviteCode(game.inviteCode!)}
@@ -191,9 +150,9 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                         color={getStatusColor(game.status) as any}
                         size="small"
                       />
-                      {game.isOwner && (
-                        <Chip label="Owner" size="small" variant="outlined" />
-                      )}
+                                                        {isGameOwner(game, getCurrentUser()?.id || '') && (
+                                    <Chip label="Owner" size="small" variant="outlined" />
+                                  )}
                     </Stack>
                   </Box>
                 </Box>

@@ -1,30 +1,62 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import GamesOverview from './components/GamesOverview';
 import GameDetailScreen from './components/GameDetailScreen';
 import GameCreationForm from './components/GameCreationForm';
 import { theme } from './theme';
+import { listenToGames, createGame, startGame, addItemToGame, generateInviteCode } from './services/firebase';
+import { ensureUser } from './services/userService';
+import type { Game } from './services/firebase';
 
 type Screen = 'overview' | 'detail' | 'creation';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('overview');
   const [selectedGameId, setSelectedGameId] = useState<string>('');
+  const [games, setGames] = useState<Game[]>([]);
+  const [user] = useState(() => ensureUser());
+
+  // Listen to user's games
+  useEffect(() => {
+    const unsubscribe = listenToGames(user.id, (games) => {
+      setGames(games);
+    });
+
+    return () => unsubscribe();
+  }, [user.id]);
 
   const handleCreateNew = () => {
-    console.log('Create new game clicked');
     setCurrentScreen('creation');
   };
 
-  const handleGameCreation = (size: number, category: string, gameMode: 'joined' | 'individual') => {
-    console.log('Game created:', { size, category, gameMode });
-    // TODO: Handle game creation logic
-    setCurrentScreen('overview');
+  const handleGameCreation = async (size: number, category: string, gameMode: 'joined' | 'individual') => {
+    try {
+      const inviteCode = generateInviteCode();
+      const gameData = {
+        category,
+        size,
+        gameMode,
+        status: 'creating' as const,
+        players: [user.id],
+        maxPlayers: 10,
+        ownerId: user.id,
+        items: [],
+        inviteCode,
+        playerItemCounts: {
+          [user.id]: 0
+        }
+      };
+
+      const gameId = await createGame(gameData);
+      console.log('Game created:', gameId);
+      setCurrentScreen('overview');
+    } catch (error) {
+      console.error('Error creating game:', error);
+    }
   };
 
   const handleGameClick = (gameId: string) => {
-    console.log('Game clicked:', gameId);
     setSelectedGameId(gameId);
     setCurrentScreen('detail');
   };
@@ -34,30 +66,39 @@ function App() {
     setSelectedGameId('');
   };
 
-  const handleStartGame = (gameId: string) => {
-    console.log('Start game:', gameId);
-    // TODO: Navigate to game board
+  const handleStartGame = async (gameId: string) => {
+    try {
+      await startGame(gameId);
+      console.log('Game started:', gameId);
+    } catch (error) {
+      console.error('Error starting game:', error);
+    }
   };
 
-  const handleAddItem = (gameId: string, item: string) => {
-    console.log('Add item to game:', gameId, item);
-    // TODO: Add item to game
+  const handleAddItem = async (gameId: string, item: string) => {
+    try {
+      await addItemToGame(gameId, item, user.id);
+      console.log('Item added:', item);
+    } catch (error) {
+      console.error('Error adding item:', error);
+    }
   };
 
   const handleShareGame = (gameId: string) => {
     console.log('Share game:', gameId);
-    // TODO: Share game functionality
+    // TODO: Implement share functionality
   };
 
   const renderScreen = () => {
     switch (currentScreen) {
-      case 'overview':
-        return (
-          <GamesOverview
-            onCreateNew={handleCreateNew}
-            onGameClick={handleGameClick}
-          />
-        );
+                    case 'overview':
+                return (
+                  <GamesOverview
+                    games={games}
+                    onCreateNew={handleCreateNew}
+                    onGameClick={handleGameClick}
+                  />
+                );
       case 'detail':
         return (
           <GameDetailScreen

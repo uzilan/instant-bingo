@@ -18,6 +18,8 @@ import {
   PlayArrow as PlayIcon,
 } from '@mui/icons-material';
 import InviteDetails from './InviteDetails';
+import { isGameOwner } from '../services/firebase';
+import { getCurrentUser } from '../services/userService';
 import ItemList from './ItemList';
 
 interface GameDetail {
@@ -28,7 +30,7 @@ interface GameDetail {
   players: string[];
   maxPlayers: number;
   createdAt: string;
-  isOwner: boolean;
+  ownerId: string;
   items: string[];
   inviteCode?: string;
   gameMode: 'joined' | 'individual';
@@ -60,7 +62,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     players: ['Alice', 'Bob', 'Charlie'],
     maxPlayers: 4,
     createdAt: '2024-01-15',
-    isOwner: true,
+    ownerId: 'user_1',
     gameMode: gameId === '1' ? 'individual' : 'joined',
     items: [
       'The Matrix',
@@ -140,7 +142,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     }
   };
 
-  const canStartGame = game.isOwner && game.status === 'creating' && game.items.length >= game.size * game.size;
+  const canStartGame = isGameOwner(game, getCurrentUser()?.id || '') && game.status === 'creating' && game.items.length >= game.size * game.size;
 
   return (
     <Box
@@ -169,9 +171,9 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           color={getStatusColor(game.status) as any}
           size="small"
         />
-        {game.isOwner && (
-          <Chip label="Owner" size="small" variant="outlined" />
-        )}
+                            {isGameOwner(game, getCurrentUser()?.id || '') && (
+                      <Chip label="Owner" size="small" variant="outlined" />
+                    )}
       </Box>
 
       {/* Game Info and Items - Stacked Vertically */}
@@ -183,7 +185,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
               <Typography variant="h6">
                 Game Details
               </Typography>
-              {game.status === 'creating' && game.isOwner && (
+              {game.status === 'creating' && isGameOwner(game, getCurrentUser()?.id || '') && (
                 <InviteDetails
                   inviteCode={game.inviteCode || ''}
                   onCopy={handleCopyInviteCode}
@@ -243,7 +245,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       </Box>
 
       {/* Action Buttons */}
-      {game.status === 'creating' && game.isOwner && (
+      {game.status === 'creating' && isGameOwner(game, getCurrentUser()?.id || '') && (
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button
             variant="contained"
