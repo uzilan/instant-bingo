@@ -120,6 +120,7 @@ function App() {
                     games={games}
                     onCreateNew={handleCreateNew}
                     onGameClick={handleGameClick}
+                    isAuthenticated={!!firebaseUser}
                   />
                 );
       case 'detail':

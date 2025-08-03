@@ -18,12 +18,14 @@ interface GamesOverviewProps {
   games: Game[];
   onCreateNew: () => void;
   onGameClick: (gameId: string) => void;
+  isAuthenticated: boolean;
 }
 
 const GamesOverview: React.FC<GamesOverviewProps> = ({
   games,
   onCreateNew,
   onGameClick,
+  isAuthenticated,
 }) => {
 
   const getStatusColor = (status: Game['status']) => {
@@ -84,18 +86,20 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
       }}
     >
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h4" component="h1">
-          Instant Bingo
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={onCreateNew}
-          startIcon={<AddIcon />}
-        >
-          New Game
-        </Button>
-      </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography variant="h4" component="h1">
+                      Instant Bingo
+                    </Typography>
+                    {isAuthenticated && (
+                      <Button
+                        variant="contained"
+                        onClick={onCreateNew}
+                        startIcon={<AddIcon />}
+                      >
+                        New Game
+                      </Button>
+                    )}
+                  </Box>
 
       {/* Games List */}
       <Box sx={{ flex: 1, overflow: 'auto' }}>
