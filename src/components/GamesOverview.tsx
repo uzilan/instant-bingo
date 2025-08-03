@@ -13,6 +13,7 @@ import InviteDetails from './InviteDetails';
 import type { Game } from '../services/firebase';
 import { isGameOwner } from '../services/firebase';
 import { getCurrentUser } from '../services/userService';
+import AppInfo from './AppInfo';
 
 interface GamesOverviewProps {
   games: Game[];
@@ -102,10 +103,13 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                     )}
                   </Box>
 
-      {/* Games List */}
-      <Box sx={{ flex: 1, overflow: 'auto' }}>
-        <Stack spacing={2}>
-          {games.map((game) => (
+                        {/* Games List */}
+                  <Box sx={{ flex: 1, overflow: 'auto' }}>
+                    {games.length === 0 && !isAuthenticated ? (
+                      <AppInfo />
+                    ) : (
+                      <Stack spacing={2}>
+                        {games.map((game) => (
             <Card 
               key={game.id}
               onClick={() => onGameClick(game.id)}
@@ -163,9 +167,10 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                 </Box>
               </CardContent>
             </Card>
-          ))}
-        </Stack>
-      </Box>
+                                  ))}
+                      </Stack>
+                    )}
+                  </Box>
     </Box>
   );
 };
