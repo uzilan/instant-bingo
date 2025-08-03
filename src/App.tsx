@@ -100,10 +100,7 @@ function App() {
     }
   };
 
-  const handleShareGame = (gameId: string) => {
-    console.log('Share game:', gameId);
-    // TODO: Implement share functionality
-  };
+
 
   const handleCancelGame = async (gameId: string) => {
     try {
@@ -156,7 +153,6 @@ function App() {
               <GameDetailScreen
                 onStartGame={handleStartGame}
                 onAddItem={handleAddItem}
-                onShareGame={handleShareGame}
                 onCancelGame={handleCancelGame}
                 currentUserId={firebaseUser?.uid}
               />

@@ -176,20 +176,63 @@ export const cancelGame = async (gameId: string): Promise<void> => {
   await updateDoc(gameRef, { status: 'cancelled' });
 };
 
+export const leaveGame = async (gameId: string, playerId: string): Promise<void> => {
+  const gameRef = doc(db, 'games', gameId);
+  const game = await getGame(gameId);
+  
+  if (game && game.players.includes(playerId)) {
+    const updatedPlayers = game.players.filter(id => id !== playerId);
+    const updatedPlayerNames = { ...game.playerNames };
+    const updatedPlayerItemCounts = { ...game.playerItemCounts };
+    
+    delete updatedPlayerNames[playerId];
+    delete updatedPlayerItemCounts[playerId];
+    
+    await updateDoc(gameRef, {
+      players: updatedPlayers,
+      playerNames: updatedPlayerNames,
+      playerItemCounts: updatedPlayerItemCounts
+    });
+  }
+};
+
 // Utility functions
 export const generateInviteCode = (): string => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
 export const findGameByInviteCode = async (inviteCode: string): Promise<Game | null> => {
-  const gamesRef = collection(db, 'games');
-  const q = query(gamesRef, where('inviteCode', '==', inviteCode));
-  
-  const querySnapshot = await getDocs(q);
-  if (!querySnapshot.empty) {
-    return querySnapshot.docs[0].data() as Game;
+  try {
+    const gamesRef = collection(db, 'games');
+    const q = query(gamesRef, where('inviteCode', '==', inviteCode));
+    
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+      const gameData = querySnapshot.docs[0].data() as Game;
+      return {
+        ...gameData,
+        id: querySnapshot.docs[0].id
+      };
+    }
+    return null;
+  } catch (error: unknown) {
+    console.error('Error finding game by invite code:', error);
+    
+    // Type guard for Firebase errors
+    const firebaseError = error as { code?: string; message?: string };
+    
+    // Check if it's a permissions error
+    if (firebaseError.code === 'permission-denied' || firebaseError.message?.includes('permission')) {
+      throw new Error('Permission denied. Please make sure you are signed in and try again.');
+    }
+    
+    // Check if it's a not-found error
+    if (firebaseError.code === 'not-found') {
+      throw new Error('Game not found with this invite code. Please check the code and try again.');
+    }
+    
+    throw new Error('Unable to find game with this invite code. Please check the code and try again.');
   }
-  return null;
 };
 
 export const joinGameByInviteCode = async (inviteCode: string, playerId: string): Promise<string> => {

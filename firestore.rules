@@ -3,17 +3,20 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Games collection
     match /games/{gameId} {
-      // Allow read if user is a player in the game
+      // Allow read if user is a player in the game OR if game is in creating status (for joining)
       allow read: if request.auth != null && 
-        request.auth.uid in resource.data.players;
+        (request.auth.uid in resource.data.players || 
+         resource.data.status == 'creating' ||
+         resource.data.inviteCode != null);
       
       // Allow create if user is authenticated
       allow create: if request.auth != null;
       
-      // Allow update if user is the owner or a player
+      // Allow update if user is the owner, a player, OR if game is in creating status (for joining)
       allow update: if request.auth != null && 
         (request.auth.uid == resource.data.ownerId || 
-         request.auth.uid in resource.data.players);
+         request.auth.uid in resource.data.players ||
+         resource.data.status == 'creating');
       
       // Allow delete if user is the owner
       allow delete: if request.auth != null && 

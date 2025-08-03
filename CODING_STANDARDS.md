@@ -44,6 +44,8 @@
 - **Test your changes**: Verify that changes work as expected before proceeding
 - **Incremental development**: Make small changes, test them, then move to the next step
 - **Documentation**: Update README and comments when adding new features
+- **User approval**: Always ask for user approval before committing or deploying changes
+- **Manual deployment only**: Never automatically commit or deploy - only when explicitly requested
 
 ## Performance Considerations
 - **Optimize re-renders**: Use React.memo, useCallback, and useMemo appropriately
@@ -74,6 +76,7 @@
 - **Atomic commits**: Make commits that represent a single logical change
 - **Branch naming**: Use descriptive branch names that indicate the purpose
 - **Clean history**: Keep commit history clean and logical
+- **Manual deployment**: Never commit or deploy automatically - only when explicitly requested by the user
 
 ## Tools and Automation
 - **ESLint**: Use ESLint for code quality and consistency

@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Snackbar,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -24,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import InviteDetails from './InviteDetails';
-import { isGameOwner, listenToGame } from '../services/firebase';
+import { isGameOwner, listenToGame, leaveGame, removeItemFromGame } from '../services/firebase';
 import ItemList from './ItemList';
 import type { Game } from '../services/firebase';
 
@@ -33,7 +34,6 @@ import type { Game } from '../services/firebase';
 interface GameDetailScreenProps {
   onStartGame: (gameId: string) => void;
   onAddItem: (gameId: string, item: string) => void;
-  onShareGame: (gameId: string) => void;
   onCancelGame: (gameId: string) => void;
   currentUserId?: string;
 }
@@ -41,7 +41,6 @@ interface GameDetailScreenProps {
 const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   onStartGame,
   onAddItem,
-  onShareGame,
   onCancelGame,
   currentUserId,
 }) => {
@@ -50,6 +49,9 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   const [game, setGame] = useState<Game | null>(null);
   const [loading, setLoading] = useState(true);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
     if (gameId) {
@@ -111,22 +113,25 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     );
   }
 
-  const handleRemoveItem = (index: number) => {
-    // TODO: Implement remove item functionality
-    console.log('Remove item at index:', index);
+  const handleRemoveItem = async (index: number) => {
+    if (game && gameId) {
+      try {
+        await removeItemFromGame(gameId, index);
+      } catch (error) {
+        console.error('Error removing item:', error);
+        // Could add error handling here
+      }
+    }
   };
 
   const handleCopyInviteCode = () => {
     if (game.inviteCode) {
       navigator.clipboard.writeText(game.inviteCode);
-      // TODO: Show success toast
+      setCopySnackbarOpen(true);
     }
   };
 
-  const handleShowQR = () => {
-    // TODO: Show QR code modal
-    console.log('Show QR code for:', game.inviteCode);
-  };
+
 
   const getStatusColor = (status: Game['status']) => {
     switch (status) {
@@ -173,6 +178,38 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     setCancelDialogOpen(false);
   };
 
+  const handleCloseCopySnackbar = () => {
+    setCopySnackbarOpen(false);
+  };
+
+  const handleLeaveClick = () => {
+    setLeaveDialogOpen(true);
+  };
+
+  const handleConfirmLeave = async () => {
+    if (game && currentUserId) {
+      try {
+        setIsLeaving(true);
+        await leaveGame(game.id, currentUserId);
+        setLeaveDialogOpen(false);
+        navigate('/');
+      } catch (error) {
+        console.error('Error leaving game:', error);
+        // Could add error handling here
+      } finally {
+        setIsLeaving(false);
+      }
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setLeaveDialogOpen(false);
+  };
+
+  const isGamePlayer = (game: Game, userId: string): boolean => {
+    return game.players.includes(userId) && !isGameOwner(game, userId);
+  };
+
   return (
     <Box
       sx={{
@@ -183,7 +220,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         position: 'fixed',
         top: 0,
         left: 0,
-        p: 2,
+        p: 1,
         gap: 2,
       }}
     >
@@ -209,19 +246,19 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1, minHeight: 0 }}>
         {/* Game Info */}
         <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minHeight: 0 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, width: '100%' }}>
               <Typography variant="h6">
                 Game Details
               </Typography>
               {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
-                <InviteDetails
-                  inviteCode={game.inviteCode || ''}
-                  onCopy={handleCopyInviteCode}
-                  onShare={() => onShareGame(gameId)}
-                  onShowQR={handleShowQR}
-                  gameCategory={game.category}
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <InviteDetails
+                    inviteCode={game.inviteCode || ''}
+                    onCopy={handleCopyInviteCode}
+                    gameCategory={game.category}
+                  />
+                </Box>
               )}
             </Box>
             
@@ -232,7 +269,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
                     {game.size} x {game.size} board • {game.players.length} players
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Created {new Date(game.createdAt).toLocaleDateString()}
+                    Created {new Date(game.createdAt).toISOString().split('T')[0]}
                   </Typography>
                 </Box>
 
@@ -311,6 +348,20 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         </Box>
       )}
 
+      {/* Leave button for players */}
+      {(game.status === 'creating' || game.status === 'active') && isGamePlayer(game, currentUserId || '') && (
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            color="warning"
+            fullWidth
+            onClick={handleLeaveClick}
+          >
+            Leave Game
+          </Button>
+        </Box>
+      )}
+
       {/* Cancel Confirmation Dialog */}
       <Dialog
         open={cancelDialogOpen}
@@ -335,6 +386,62 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Leave Game Confirmation Dialog */}
+      <Dialog
+        open={leaveDialogOpen}
+        onClose={handleCancelLeave}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Leave Game
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to leave "{game?.category}"? You will no longer be able to participate in this game.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelLeave} variant="contained" color="primary">
+            Stay
+          </Button>
+          <Button 
+            onClick={handleConfirmLeave} 
+            color="warning" 
+            variant="contained"
+            disabled={isLeaving}
+          >
+            {isLeaving ? 'Leaving...' : 'Leave Game'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Copy Success Snackbar */}
+      <Snackbar
+        open={copySnackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleCloseCopySnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Box 
+          sx={{ 
+            backgroundColor: '#2196f3',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: 2,
+            boxShadow: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            fontWeight: 500,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500, color: 'white' }}>
+            ✅ Invite code copied to clipboard!
+          </Typography>
+        </Box>
+      </Snackbar>
     </Box>
   );
 };

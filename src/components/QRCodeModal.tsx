@@ -8,6 +8,7 @@ import {
   Box,
   Typography,
   CircularProgress,
+  Snackbar,
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import QRCode from 'qrcode';
@@ -28,6 +29,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
+  const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
 
   useEffect(() => {
     if (open && inviteCode) {
@@ -64,7 +66,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
 
   const handleCopyInviteCode = () => {
     navigator.clipboard.writeText(inviteCode);
-    // TODO: Show success toast
+    setCopySnackbarOpen(true);
   };
 
   const handleDownloadQR = () => {
@@ -74,6 +76,10 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
       link.href = qrCodeDataUrl;
       link.click();
     }
+  };
+
+  const handleCloseCopySnackbar = () => {
+    setCopySnackbarOpen(false);
   };
 
   return (
@@ -180,6 +186,32 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
           Close
         </Button>
       </DialogActions>
+
+      {/* Copy Success Snackbar */}
+      <Snackbar
+        open={copySnackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleCloseCopySnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Box 
+          sx={{ 
+            backgroundColor: '#2196f3',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: 2,
+            boxShadow: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            fontWeight: 500,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500, color: 'white' }}>
+            ✅ Invite code copied to clipboard!
+          </Typography>
+        </Box>
+      </Snackbar>
     </Dialog>
   );
 };

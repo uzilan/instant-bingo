@@ -14,15 +14,12 @@ import QRCodeModal from './QRCodeModal';
 interface InviteDetailsProps {
   inviteCode: string;
   onCopy: () => void;
-  onShare: () => void;
-  onShowQR?: () => void;
   gameCategory?: string;
 }
 
 const InviteDetails: React.FC<InviteDetailsProps> = ({
   inviteCode,
   onCopy,
-  onShare,
   gameCategory = 'Bingo Game',
 }) => {
   const [showQRModal, setShowQRModal] = useState(false);
@@ -34,6 +31,32 @@ const InviteDetails: React.FC<InviteDetailsProps> = ({
 
   const handleCloseQR = () => {
     setShowQRModal(false);
+  };
+
+  const handleShare = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    
+    const shareUrl = `https://instant-bingo.web.app/join/${inviteCode}`;
+    const shareText = `Join my ${gameCategory} game! Use this link: ${shareUrl}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Join ${gameCategory}`,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (error) {
+        console.error('Error sharing:', error);
+        // Fallback to copying the link
+        navigator.clipboard.writeText(shareUrl);
+        onCopy(); // Show the copy feedback
+      }
+    } else {
+      // Fallback for browsers that don't support Web Share API
+      navigator.clipboard.writeText(shareUrl);
+      onCopy(); // Show the copy feedback
+    }
   };
 
   return (
@@ -52,10 +75,7 @@ const InviteDetails: React.FC<InviteDetailsProps> = ({
           <CopyIcon />
         </IconButton>
         <IconButton 
-          onClick={(event) => {
-            event.stopPropagation();
-            onShare();
-          }} 
+          onClick={handleShare}
           size="small"
         >
           <ShareIcon />

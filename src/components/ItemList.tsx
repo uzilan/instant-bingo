@@ -39,6 +39,7 @@ const ItemList: React.FC<ItemListProps> = ({
 }) => {
   const [showAddItemDialog, setShowAddItemDialog] = useState(false);
   const [newItem, setNewItem] = useState('');
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const handleAddItem = () => {
     if (newItem.trim() && !items.includes(newItem.trim())) {
@@ -53,8 +54,8 @@ const ItemList: React.FC<ItemListProps> = ({
   };
 
   return (
-    <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minHeight: 0 }}>
+    <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, width: '100%' }}>
+      <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0, width: '100%' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">
             {title} ({items.length}/{maxItems})
@@ -63,7 +64,14 @@ const ItemList: React.FC<ItemListProps> = ({
             <Button
               variant="outlined"
               size="small"
-              onClick={() => setShowAddItemDialog(true)}
+              disabled={items.length >= maxItems}
+              onClick={() => {
+                setShowAddItemDialog(true);
+                // Focus the input after a short delay to ensure dialog is rendered
+                setTimeout(() => {
+                  inputRef.current?.focus();
+                }, 100);
+              }}
               startIcon={<AddIcon />}
             >
               Add Item
@@ -104,17 +112,21 @@ const ItemList: React.FC<ItemListProps> = ({
       </CardContent>
 
       {/* Add Item Dialog */}
-      <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)}>
+      <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Item</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
+            inputRef={inputRef}
             margin="dense"
             label="Item"
             fullWidth
+            multiline
+            rows={3}
+            placeholder="Enter item"
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddItem()}
+            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleAddItem()}
           />
         </DialogContent>
         <DialogActions>

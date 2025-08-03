@@ -12,12 +12,15 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
+  Alert,
+  Snackbar,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Add as AddIcon, Delete as DeleteIcon, GroupAdd as GroupAddIcon, ExitToApp as ExitToAppIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import InviteDetails from './InviteDetails';
 import type { Game } from '../services/firebase';
-import { isGameOwner } from '../services/firebase';
+import { isGameOwner, joinGameByInviteCode, leaveGame } from '../services/firebase';
 import AppInfo from './AppInfo';
 
 interface GamesOverviewProps {
@@ -38,6 +41,14 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
   const navigate = useNavigate();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [gameToDelete, setGameToDelete] = useState<Game | null>(null);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [joinError, setJoinError] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [gameToLeave, setGameToLeave] = useState<Game | null>(null);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   const getStatusColor = (status: Game['status']) => {
     switch (status) {
@@ -71,18 +82,10 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
 
   const handleCopyInviteCode = (inviteCode: string) => {
     navigator.clipboard.writeText(inviteCode);
-    // TODO: Show success toast
+    setCopySnackbarOpen(true);
   };
 
-  const handleShareGame = (gameId: string) => {
-    console.log('Share game:', gameId);
-    // TODO: Implement share functionality
-  };
 
-  const handleShowQR = (inviteCode: string) => {
-    console.log('Show QR code for:', inviteCode);
-    // TODO: Show QR code modal
-  };
 
   const handleDeleteClick = (e: React.MouseEvent, game: Game) => {
     e.stopPropagation();
@@ -103,7 +106,75 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
     setGameToDelete(null);
   };
 
+  const handleJoinClick = () => {
+    setJoinDialogOpen(true);
+    setInviteCode('');
+    setJoinError('');
+  };
 
+  const handleJoinGame = async () => {
+    if (!inviteCode.trim()) {
+      setJoinError('Please enter an invite code');
+      return;
+    }
+
+    try {
+      setIsJoining(true);
+      setJoinError('');
+      
+      const gameId = await joinGameByInviteCode(inviteCode.trim().toUpperCase(), currentUserId || '');
+      
+      setJoinDialogOpen(false);
+      setInviteCode('');
+      navigate(`/game/${gameId}`);
+    } catch (error) {
+      console.error('Error joining game:', error);
+      setJoinError(error instanceof Error ? error.message : 'Failed to join game');
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleCancelJoin = () => {
+    setJoinDialogOpen(false);
+    setInviteCode('');
+    setJoinError('');
+  };
+
+  const handleCloseCopySnackbar = () => {
+    setCopySnackbarOpen(false);
+  };
+
+  const handleLeaveClick = (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    setGameToLeave(game);
+    setLeaveDialogOpen(true);
+  };
+
+  const handleConfirmLeave = async () => {
+    if (gameToLeave && currentUserId) {
+      try {
+        setIsLeaving(true);
+        await leaveGame(gameToLeave.id, currentUserId);
+        setLeaveDialogOpen(false);
+        setGameToLeave(null);
+      } catch (error) {
+        console.error('Error leaving game:', error);
+        // Could add error handling here
+      } finally {
+        setIsLeaving(false);
+      }
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setLeaveDialogOpen(false);
+    setGameToLeave(null);
+  };
+
+  const isGamePlayer = (game: Game, userId: string): boolean => {
+    return game.players.includes(userId) && !isGameOwner(game, userId);
+  };
 
   return (
     <Box
@@ -125,14 +196,22 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                       Instant Bingo
                     </Typography>
                     {isAuthenticated && (
-                      <Button
-                        variant="contained"
-                        onClick={onCreateNew}
-                        startIcon={<AddIcon />}
-                        sx={{ alignSelf: 'flex-start' }}
-                      >
-                        New Game
-                      </Button>
+                      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="contained"
+                          onClick={onCreateNew}
+                          startIcon={<AddIcon />}
+                        >
+                          New Game
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          onClick={handleJoinClick}
+                          startIcon={<GroupAddIcon />}
+                        >
+                          Join Game
+                        </Button>
+                      </Box>
                     )}
                   </Box>
 
@@ -160,34 +239,29 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
               }}
             >
               <CardContent>
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: { sm: 'center' } }}>
-                  <Box sx={{ flex: { sm: 1 } }}>
-                    <Stack spacing={1}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="h6" component="h2">
-                          {game.category}
-                        </Typography>
-                        {game.status === 'creating' && isGameOwner(game, currentUserId || '') && game.inviteCode && (
-                          <InviteDetails
-                            inviteCode={game.inviteCode}
-                            onCopy={() => handleCopyInviteCode(game.inviteCode!)}
-                            onShare={() => handleShareGame(game.id)}
-                            onShowQR={() => handleShowQR(game.inviteCode!)}
-                            gameCategory={game.category}
-                          />
-                        )}
-                      </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                    <Typography variant="h6" component="h2">
+                      {game.category}
+                    </Typography>
+                    {game.status === 'creating' && isGameOwner(game, currentUserId || '') && game.inviteCode && (
+                      <InviteDetails
+                        inviteCode={game.inviteCode}
+                        onCopy={() => handleCopyInviteCode(game.inviteCode!)}
+                        gameCategory={game.category}
+                      />
+                    )}
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Box>
                       <Typography variant="body2" color="text.secondary">
                         {game.size} x {game.size} board • {game.players.length} players
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Created {new Date(game.createdAt).toLocaleDateString()}
+                        Created {new Date(game.createdAt).toISOString().split('T')[0]}
                       </Typography>
-                    </Stack>
-                  </Box>
-                  
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Stack direction="row" spacing={1} alignItems="center">
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Chip
                         label={getStatusText(game.status)}
                         color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
@@ -201,12 +275,20 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                           size="small"
                           color="error"
                           onClick={(e) => handleDeleteClick(e, game)}
-                          sx={{ ml: 1 }}
                         >
                           <DeleteIcon />
                         </IconButton>
                       )}
-                    </Stack>
+                      {(game.status === 'creating' || game.status === 'active') && isGamePlayer(game, currentUserId || '') && (
+                        <IconButton
+                          size="small"
+                          color="warning"
+                          onClick={(e) => handleLeaveClick(e, game)}
+                        >
+                          <ExitToAppIcon />
+                        </IconButton>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               </CardContent>
@@ -240,6 +322,111 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Join Game Dialog */}
+      <Dialog
+        open={joinDialogOpen}
+        onClose={handleCancelJoin}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Join Game
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Enter the invite code to join a game
+            </Typography>
+            <TextField
+              fullWidth
+              label="Invite Code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              placeholder="e.g., ABC123"
+              disabled={isJoining}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !isJoining) {
+                  handleJoinGame();
+                }
+              }}
+            />
+            {joinError && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {joinError}
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelJoin} disabled={isJoining}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleJoinGame} 
+            variant="contained" 
+            disabled={isJoining || !inviteCode.trim()}
+          >
+            {isJoining ? 'Joining...' : 'Join Game'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Leave Game Confirmation Dialog */}
+      <Dialog
+        open={leaveDialogOpen}
+        onClose={handleCancelLeave}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          Leave Game
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to leave "{gameToLeave?.category}"? You will no longer be able to participate in this game.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelLeave} variant="contained" color="primary">
+            Stay
+          </Button>
+          <Button 
+            onClick={handleConfirmLeave} 
+            color="warning" 
+            variant="contained"
+            disabled={isLeaving}
+          >
+            {isLeaving ? 'Leaving...' : 'Leave Game'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Copy Success Snackbar */}
+      <Snackbar
+        open={copySnackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleCloseCopySnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Box 
+          sx={{ 
+            backgroundColor: '#2196f3',
+            color: 'white',
+            padding: '12px 24px',
+            borderRadius: 2,
+            boxShadow: 3,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            fontWeight: 500,
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500, color: 'white' }}>
+            ✅ Invite code copied to clipboard!
+          </Typography>
+        </Box>
+      </Snackbar>
     </Box>
   );
 };
