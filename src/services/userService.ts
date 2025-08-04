@@ -11,7 +11,12 @@ const USER_STORAGE_KEY = 'bingo_user';
 export const getCurrentUser = (): User | null => {
   const userData = localStorage.getItem(USER_STORAGE_KEY);
   if (userData) {
-    return JSON.parse(userData);
+    try {
+      return JSON.parse(userData);
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      return null;
+    }
   }
   return null;
 };

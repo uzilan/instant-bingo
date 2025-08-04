@@ -88,6 +88,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
       onClose={onClose}
       maxWidth="sm"
       fullWidth
+      data-testid="qr-code-modal"
       PaperProps={{
         sx: {
           borderRadius: 2,

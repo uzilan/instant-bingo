@@ -69,16 +69,18 @@ const InviteDetails: React.FC<InviteDetailsProps> = ({
             onCopy();
           }} 
           size="small"
+          aria-label="Copy"
         >
           <CopyIcon />
         </IconButton>
         <IconButton 
           onClick={handleShare}
           size="small"
+          aria-label="Share"
         >
           <ShareIcon />
         </IconButton>
-        <IconButton onClick={handleShowQR} size="small">
+        <IconButton onClick={handleShowQR} size="small" aria-label="QR Code">
           <QrCodeIcon />
         </IconButton>
       </Box>

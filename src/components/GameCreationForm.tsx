@@ -64,10 +64,11 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
               <FormControl fullWidth>
-                <InputLabel>Board Size</InputLabel>
+                <InputLabel id="board-size-label">Board Size</InputLabel>
                 <Select
                   value={size}
                   label="Board Size"
+                  labelId="board-size-label"
                   onChange={(e) => setSize(e.target.value as number)}
                 >
                   <MenuItem value={3}>3 x 3 (9 items)</MenuItem>
@@ -84,13 +85,18 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g., Movies, Food, Travel"
                 required
+                id="category-input"
+                inputProps={{
+                  'aria-label': 'Category'
+                }}
               />
 
               <FormControl fullWidth>
-                <InputLabel>Game Mode</InputLabel>
+                <InputLabel id="game-mode-label">Game Mode</InputLabel>
                 <Select
                   value={gameMode}
                   label="Game Mode"
+                  labelId="game-mode-label"
                   onChange={(e) => setGameMode(e.target.value as 'joined' | 'individual')}
                 >
                   <MenuItem value="joined">
@@ -109,10 +115,11 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
               </FormControl>
 
               <FormControl fullWidth>
-                <InputLabel>Winning Model</InputLabel>
+                <InputLabel id="winning-model-label">Winning Model</InputLabel>
                 <Select
                   value={winningModel}
                   label="Winning Model"
+                  labelId="winning-model-label"
                   onChange={(e) => setWinningModel(e.target.value as 'line' | 'fullBoard')}
                 >
                   <MenuItem value="line">
