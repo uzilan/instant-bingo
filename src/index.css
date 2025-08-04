@@ -28,6 +28,27 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  /* Mobile browser compatibility */
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+  /* Prevent mobile browser UI from hiding content */
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+}
+
+/* Mobile browser compatibility */
+html {
+  /* Prevent zoom on input focus */
+  -webkit-text-size-adjust: 100%;
+  /* Enable safe area support */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+/* Ensure buttons are always accessible */
+button {
+  /* Prevent mobile browser from hiding buttons */
+  position: relative;
+  z-index: 1;
 }
 
 h1 {

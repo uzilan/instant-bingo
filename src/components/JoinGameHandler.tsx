@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -29,9 +29,10 @@ const JoinGameHandler: React.FC = () => {
     });
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inviteCode]);
 
-  const handleJoinGame = async (firebaseUser: FirebaseUser, code: string) => {
+  const handleJoinGame = useCallback(async (firebaseUser: FirebaseUser, code: string) => {
     try {
       setLoading(true);
       setError('');
@@ -45,7 +46,7 @@ const JoinGameHandler: React.FC = () => {
       setError(err instanceof Error ? err.message : 'Failed to join game');
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   const handleSignIn = () => {
     // This will trigger the auth state change and automatically join the game

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -35,9 +35,10 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
     if (open && inviteCode) {
       generateQRCode();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, inviteCode]);
 
-  const generateQRCode = async () => {
+  const generateQRCode = useCallback(async () => {
     setIsLoading(true);
     setError('');
     
@@ -62,7 +63,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [inviteCode]);
 
   const handleCopyInviteCode = () => {
     navigator.clipboard.writeText(inviteCode);

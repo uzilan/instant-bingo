@@ -7,9 +7,6 @@ import {
   Button,
   Chip,
   Stack,
-  List,
-  ListItem,
-  ListItemText,
   CircularProgress,
   Dialog,
   DialogTitle,
@@ -251,6 +248,8 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         p: 1,
         gap: 2,
         overflow: 'hidden',
+        // Add padding for floating buttons
+        pb: { xs: 'calc(env(safe-area-inset-bottom) + 100px)', sm: 1 }, // Reduced padding for floating buttons
       }}
     >
       {/* Header */}
@@ -278,14 +277,15 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         gap: 1, 
         flex: 1,
         minHeight: 0,
+        maxHeight: 'calc(100vh - 200px)', // Reserve space for header and buttons
       }}>
         {/* Game Info - Only show for creating games */}
         {game.status === 'creating' && (
-          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, maxHeight: '60vh' }}>
             <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, width: '100%' }}>
                 <Typography variant="h6">
-                  Game Details
+                  Players
                 </Typography>
                 <InviteDetails
                   inviteCode={game.inviteCode || ''}
@@ -298,45 +298,37 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
                 <Stack spacing={1}>
                   {/* Players List */}
                   <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="h6">
-                        Players
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {game.size} x {game.size} board • {game.gameMode === 'joined' ? 'joined list' : 'individual lists'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Win by: {game.winningModel === 'line' ? 'complete a line' : 'complete the board'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Created {new Date(game.createdAt).toISOString().split('T')[0]}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <List dense>
+                    <Box sx={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(2, 1fr)', 
+                      gap: 1 
+                    }}>
                       {game.players.map((playerId, index) => (
-                        <ListItem 
+                        <Box 
                           key={index} 
                           sx={{ 
                             px: 1, 
+                            py: 0.5,
                             border: '1px solid', 
                             borderColor: 'grey.700', 
-                            borderRadius: 1, 
-                            mb: 1,
+                            borderRadius: 1,
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            minHeight: '40px'
                           }}
                         >
-                          <ListItemText 
-                            primary={game.playerNames?.[playerId] || 'Unknown Player'}
-                          />
+                          <Typography variant="body2">
+                            {game.playerNames?.[playerId] || 'Unknown Player'}
+                          </Typography>
                           {game.gameMode === 'individual' && (
-                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
-                              {game.playerItemCounts?.[playerId] || 0}/{game.size * game.size} items
+                            <Typography variant="body2" color="text.secondary">
+                              {game.playerItemCounts?.[playerId] || 0}/{game.size * game.size}
                             </Typography>
                           )}
-                        </ListItem>
+                        </Box>
                       ))}
-                    </List>
+                    </Box>
                   </Box>
                 </Stack>
               </Box>
@@ -346,7 +338,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
 
         {/* Items List - Show for all games in creating status */}
         {game.status === 'creating' && game.gameMode === 'joined' && (
-          <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          <Box sx={{ flex: 1, display: 'flex', minHeight: 0, maxHeight: '40vh' }}>
             <ItemList
               items={game.items}
               maxItems={game.size * game.size}
@@ -360,7 +352,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
 
         {/* Individual Items Lists - Show for individual mode games in creating status */}
         {game.status === 'creating' && game.gameMode === 'individual' && currentUserId && (
-          <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
+          <Box sx={{ flex: 1, display: 'flex', minHeight: 0, maxHeight: '40vh' }}>
             <ItemList
               items={game.playerItems?.[currentUserId] || []}
               maxItems={game.size * game.size}
@@ -430,9 +422,21 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
 
       </Box>
 
-      {/* Action Buttons */}
+      {/* Floating Action Buttons - Always visible above mobile browser UI */}
       {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ 
+          position: 'fixed',
+          bottom: { xs: 'calc(env(safe-area-inset-bottom) + 5px)', sm: 16 },
+          left: 8,
+          right: 8,
+          zIndex: 1000,
+          display: 'flex',
+          gap: 2,
+          backgroundColor: 'background.default',
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 1,
+        }}>
           <Button
             variant="outlined"
             color="error"
@@ -455,7 +459,19 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       
       {/* Cancel button for active games */}
       {game.status === 'active' && isGameOwner(game, currentUserId || '') && (
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ 
+          position: 'fixed',
+          bottom: { xs: 'calc(env(safe-area-inset-bottom) + 5px)', sm: 16 },
+          left: 8,
+          right: 8,
+          zIndex: 1000,
+          display: 'flex',
+          gap: 2,
+          backgroundColor: 'background.default',
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 1,
+        }}>
           <Button
             variant="outlined"
             color="error"
@@ -469,7 +485,19 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
 
       {/* Leave button for players */}
       {(game.status === 'creating' || game.status === 'active') && isGamePlayer(game, currentUserId || '') && (
-        <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ 
+          position: 'fixed',
+          bottom: { xs: 'calc(env(safe-area-inset-bottom) + 5px)', sm: 16 },
+          left: 8,
+          right: 8,
+          zIndex: 1000,
+          display: 'flex',
+          gap: 2,
+          backgroundColor: 'background.default',
+          borderRadius: 2,
+          boxShadow: 3,
+          p: 1,
+        }}>
           <Button
             variant="outlined"
             color="warning"
