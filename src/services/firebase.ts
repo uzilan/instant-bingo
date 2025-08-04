@@ -24,6 +24,8 @@ export interface Game {
   items: string[];
   inviteCode?: string;
   gameMode: 'joined' | 'individual';
+  winningModel: 'line' | 'fullBoard';
+  winner?: string;
   playerItemCounts?: { [playerId: string]: number };
   playerItems?: { [playerId: string]: string[] };
   playerBoards?: { [playerId: string]: { [key: string]: string } };
@@ -286,7 +288,20 @@ export const markCell = async (gameId: string, playerId: string, row: number, co
   
   const key = `${row}-${col}`;
   updatedMarkedCells[playerId][key] = !updatedMarkedCells[playerId][key];
-  await updateDoc(gameRef, { playerMarkedCells: updatedMarkedCells });
+  
+  // Check for win after marking the cell
+  const hasWon = checkWin(updatedMarkedCells[playerId], game.size, game.winningModel);
+  
+  if (hasWon) {
+    // Mark game as completed and set winner
+    await updateDoc(gameRef, { 
+      status: 'completed',
+      playerMarkedCells: updatedMarkedCells,
+      winner: playerId
+    });
+  } else {
+    await updateDoc(gameRef, { playerMarkedCells: updatedMarkedCells });
+  }
 };
 
 export const cancelGame = async (gameId: string): Promise<void> => {
@@ -317,6 +332,69 @@ export const leaveGame = async (gameId: string, playerId: string): Promise<void>
 };
 
 // Utility functions
+// Win detection functions
+export const checkLineWin = (markedCells: { [key: string]: boolean }, size: number): boolean => {
+  // Check horizontal lines
+  for (let row = 0; row < size; row++) {
+    let horizontalComplete = true;
+    for (let col = 0; col < size; col++) {
+      if (!markedCells[`${row}-${col}`]) {
+        horizontalComplete = false;
+        break;
+      }
+    }
+    if (horizontalComplete) return true;
+  }
+
+  // Check vertical lines
+  for (let col = 0; col < size; col++) {
+    let verticalComplete = true;
+    for (let row = 0; row < size; row++) {
+      if (!markedCells[`${row}-${col}`]) {
+        verticalComplete = false;
+        break;
+      }
+    }
+    if (verticalComplete) return true;
+  }
+
+  // Check diagonal (top-left to bottom-right)
+  let diagonal1Complete = true;
+  for (let i = 0; i < size; i++) {
+    if (!markedCells[`${i}-${i}`]) {
+      diagonal1Complete = false;
+      break;
+    }
+  }
+  if (diagonal1Complete) return true;
+
+  // Check diagonal (top-right to bottom-left)
+  let diagonal2Complete = true;
+  for (let i = 0; i < size; i++) {
+    if (!markedCells[`${i}-${size - 1 - i}`]) {
+      diagonal2Complete = false;
+      break;
+    }
+  }
+  if (diagonal2Complete) return true;
+
+  return false;
+};
+
+export const checkFullBoardWin = (markedCells: { [key: string]: boolean }, size: number): boolean => {
+  const totalCells = size * size;
+  const markedCount = Object.values(markedCells).filter(Boolean).length;
+  return markedCount === totalCells;
+};
+
+export const checkWin = (markedCells: { [key: string]: boolean }, size: number, winningModel: 'line' | 'fullBoard'): boolean => {
+  if (winningModel === 'line') {
+    return checkLineWin(markedCells, size);
+  } else {
+    return checkFullBoardWin(markedCells, size);
+  }
+};
+
 export const generateInviteCode = (): string => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };

@@ -44,7 +44,7 @@ function App() {
     window.location.href = '/create';
   };
 
-  const handleGameCreation = async (size: number, category: string, gameMode: 'joined' | 'individual') => {
+  const handleGameCreation = async (size: number, category: string, gameMode: 'joined' | 'individual', winningModel: 'line' | 'fullBoard') => {
     if (!firebaseUser) {
       console.error('User not authenticated');
       return;
@@ -57,6 +57,7 @@ function App() {
         category,
         size,
         gameMode,
+        winningModel,
         status: 'creating' as const,
         players: [firebaseUser.uid],
         playerNames: {

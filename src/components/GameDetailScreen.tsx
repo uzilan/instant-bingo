@@ -29,6 +29,7 @@ import { isGameOwner, listenToGame, leaveGame, removeItemFromGame, markCell } fr
 import ItemList from './ItemList';
 import BingoBoard from './BingoBoard';
 import CustomSnackbar from './CustomSnackbar';
+
 import type { Game } from '../services/firebase';
 
 interface GameDetailScreenProps {
@@ -305,6 +306,9 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
                           {game.size} x {game.size} board • {game.gameMode === 'joined' ? 'joined list' : 'individual lists'}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
+                          Win by: {game.winningModel === 'line' ? 'complete a line' : 'complete the board'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
                           Created {new Date(game.createdAt).toISOString().split('T')[0]}
                         </Typography>
                       </Box>
@@ -367,41 +371,58 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Box>
         )}
 
-        {/* Bingo Board Selector - Show for active games */}
-        {game.status === 'active' && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && (
+        {/* Bingo Board Selector - Show for active and completed games */}
+        {(game.status === 'active' || game.status === 'completed') && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && (
           <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Select board:
+                  Boards:
                 </Typography>
-                <Select
-                  value={selectedPlayerId || currentUserId}
-                  onChange={(e) => setSelectedPlayerId(e.target.value)}
-                  size="small"
-                  sx={{ minWidth: 200 }}
-                >
-                  <MenuItem value={currentUserId}>
-                    My Board
-                  </MenuItem>
-                  {game.players
-                    .filter(playerId => playerId !== currentUserId)
-                    .map((playerId) => (
-                      <MenuItem key={playerId} value={playerId}>
-                        {game.playerNames?.[playerId] || 'Unknown Player'}
-                      </MenuItem>
-                    ))}
-                </Select>
+                                  <Select
+                    value={selectedPlayerId || (game.status === 'completed' ? game.winner : currentUserId)}
+                    onChange={(e) => setSelectedPlayerId(e.target.value)}
+                    size="small"
+                    sx={{ minWidth: 200 }}
+                  >
+                    <MenuItem value={currentUserId}>
+                      My Board
+                    </MenuItem>
+                    {game.players
+                      .filter(playerId => playerId !== currentUserId)
+                      .map((playerId) => (
+                        <MenuItem key={playerId} value={playerId}>
+                          {game.playerNames?.[playerId] || 'Unknown Player'}
+                        </MenuItem>
+                      ))}
+                  </Select>
               </Box>
               
               <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                 <BingoBoard
-                  board={game.playerBoards[selectedPlayerId || currentUserId]}
-                  markedCells={game.playerMarkedCells?.[selectedPlayerId || currentUserId] || {}}
-                  onCellClick={selectedPlayerId === currentUserId ? handleCellClick : undefined}
+                  board={game.playerBoards[selectedPlayerId || (game.status === 'completed' && game.winner ? game.winner : currentUserId)]}
+                  markedCells={game.playerMarkedCells?.[selectedPlayerId || (game.status === 'completed' && game.winner ? game.winner : currentUserId)] || {}}
+                  onCellClick={game.status === 'completed' ? undefined : ((selectedPlayerId || currentUserId) === currentUserId ? handleCellClick : undefined)}
                   size={game.size}
                 />
               </Box>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Winner Display for Completed Games */}
+        {game.status === 'completed' && game.winner && (
+          <Card sx={{ mb: 1 }}>
+            <CardContent sx={{ textAlign: 'center', py: 1 }}>
+              <Typography variant="h6" color="success.main" gutterBottom>
+                🎉 Game Complete! 🎉
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Winner: {game.playerNames?.[game.winner] || 'Unknown Player'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Won by {game.winningModel === 'line' ? 'completing a line' : 'completing the board'}
+              </Typography>
             </CardContent>
           </Card>
         )}

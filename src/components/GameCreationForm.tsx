@@ -15,7 +15,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 interface GameCreationFormProps {
-  onSubmit: (size: number, category: string, gameMode: 'joined' | 'individual') => void;
+  onSubmit: (size: number, category: string, gameMode: 'joined' | 'individual', winningModel: 'line' | 'fullBoard') => void;
 }
 
 const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
@@ -23,11 +23,12 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
   const [size, setSize] = useState<number>(5);
   const [category, setCategory] = useState<string>('');
   const [gameMode, setGameMode] = useState<'joined' | 'individual'>('joined');
+  const [winningModel, setWinningModel] = useState<'line' | 'fullBoard'>('line');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (category.trim()) {
-      onSubmit(size, category.trim(), gameMode);
+      onSubmit(size, category.trim(), gameMode, winningModel);
     }
   };
 
@@ -80,7 +81,6 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g., Movies, Food, Travel"
                 required
-                helperText="What category will your bingo items be from?"
               />
 
               <FormControl fullWidth>
@@ -100,6 +100,28 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
                     <Box>
                       <Typography variant="body1" component="div">Individual Lists</Typography>
                       <Typography variant="caption" color="text.secondary">Each player creates their own</Typography>
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <InputLabel>Winning Model</InputLabel>
+                <Select
+                  value={winningModel}
+                  label="Winning Model"
+                  onChange={(e) => setWinningModel(e.target.value as 'line' | 'fullBoard')}
+                >
+                  <MenuItem value="line">
+                    <Box>
+                      <Typography variant="body1" component="div">Complete a Line</Typography>
+                      <Typography variant="caption" color="text.secondary">Horizontal, vertical, or diagonal</Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="fullBoard">
+                    <Box>
+                      <Typography variant="body1" component="div">Complete the Board</Typography>
+                      <Typography variant="caption" color="text.secondary">Mark all cells on the board</Typography>
                     </Box>
                   </MenuItem>
                 </Select>
