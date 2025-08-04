@@ -371,6 +371,23 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Box>
         )}
 
+        {/* Winner Display for Completed Games */}
+        {game.status === 'completed' && game.winner && (
+          <Card sx={{ mb: 0.2 }}>
+            <CardContent sx={{ textAlign: 'center', py: 1 }}>
+              <Typography variant="h6" color="success.main" gutterBottom>
+                🎉 Game Complete! 🎉
+              </Typography>
+              <Typography variant="body1" gutterBottom>
+                Winner: {game.playerNames?.[game.winner] || 'Unknown Player'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Won by {game.winningModel === 'line' ? 'completing a line' : 'completing the board'}
+              </Typography>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Bingo Board Selector - Show for active and completed games */}
         {(game.status === 'active' || game.status === 'completed') && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && (
           <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -410,22 +427,6 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Card>
         )}
 
-        {/* Winner Display for Completed Games */}
-        {game.status === 'completed' && game.winner && (
-          <Card sx={{ mb: 1 }}>
-            <CardContent sx={{ textAlign: 'center', py: 1 }}>
-              <Typography variant="h6" color="success.main" gutterBottom>
-                🎉 Game Complete! 🎉
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                Winner: {game.playerNames?.[game.winner] || 'Unknown Player'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Won by {game.winningModel === 'line' ? 'completing a line' : 'completing the board'}
-              </Typography>
-            </CardContent>
-          </Card>
-        )}
       </Box>
 
       {/* Action Buttons */}

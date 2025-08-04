@@ -118,6 +118,7 @@ describe('GamesOverview - Not Logged In', () => {
         ownerId: 'user1',
         items: [],
         inviteCode: 'ABC123',
+        winningModel: 'line' as const,
       }
     ];
 

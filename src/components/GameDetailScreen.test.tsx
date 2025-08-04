@@ -98,7 +98,8 @@ const mockGame: Game = {
   ownerId: 'user1',
   items: ['Item 1', 'Item 2', 'Item 3'],
   inviteCode: 'TEST123',
-  gameMode: 'joined'
+  gameMode: 'joined',
+  winningModel: 'line'
 };
 
 
