@@ -86,16 +86,27 @@ function App() {
     }
   };
 
-  const handleAddItem = async (gameId: string, item: string) => {
+  const [addItemError, setAddItemError] = useState<string | null>(null);
+
+  const handleAddItem = async (gameId: string, item: string): Promise<boolean> => {
     if (!firebaseUser) {
       console.error('User not authenticated');
-      return;
+      return false;
     }
 
     try {
-      await addItemToGame(gameId, item, firebaseUser.uid);
+      const result = await addItemToGame(gameId, item, firebaseUser.uid);
+      if (!result.success) {
+        setAddItemError(result.error || 'Failed to add item');
+        return false;
+      } else {
+        setAddItemError(null);
+        return true;
+      }
     } catch (error) {
       console.error('Error adding item:', error);
+      setAddItemError('Failed to add item');
+      return false;
     }
   };
 
@@ -155,6 +166,8 @@ function App() {
                 onAddItem={handleAddItem}
                 onCancelGame={handleCancelGame}
                 currentUserId={firebaseUser?.uid}
+                addItemError={addItemError}
+                onClearAddItemError={() => setAddItemError(null)}
               />
             } />
             <Route path="/create" element={

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Box,
   Card,
@@ -49,6 +49,10 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [gameToLeave, setGameToLeave] = useState<Game | null>(null);
   const [isLeaving, setIsLeaving] = useState(false);
+  
+  const inviteCodeInputRef = useRef<HTMLInputElement>(null);
+
+
 
   const getStatusColor = (status: Game['status']) => {
     switch (status) {
@@ -110,6 +114,10 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
     setJoinDialogOpen(true);
     setInviteCode('');
     setJoinError('');
+    // Focus the input after a short delay to ensure dialog is rendered
+    setTimeout(() => {
+      inviteCodeInputRef.current?.focus();
+    }, 100);
   };
 
   const handleJoinGame = async () => {
@@ -345,7 +353,9 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
               onChange={(e) => setInviteCode(e.target.value)}
               placeholder="e.g., ABC123"
               disabled={isJoining}
-              onKeyPress={(e) => {
+              inputRef={inviteCodeInputRef}
+              autoFocus
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' && !isJoining) {
                   handleJoinGame();
                 }

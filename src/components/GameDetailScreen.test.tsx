@@ -108,7 +108,8 @@ describe('GameDetailScreen', () => {
     onStartGame: vi.fn(),
     onAddItem: vi.fn(),
     onCancelGame: vi.fn(),
-    currentUserId: 'user1'
+    currentUserId: 'user1',
+    onClearAddItemError: vi.fn(),
   };
 
   beforeEach(() => {

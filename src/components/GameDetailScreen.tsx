@@ -15,7 +15,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Snackbar,
   Select,
   MenuItem,
   IconButton,
@@ -29,13 +28,16 @@ import InviteDetails from './InviteDetails';
 import { isGameOwner, listenToGame, leaveGame, removeItemFromGame, markCell } from '../services/firebase';
 import ItemList from './ItemList';
 import BingoBoard from './BingoBoard';
+import CustomSnackbar from './CustomSnackbar';
 import type { Game } from '../services/firebase';
 
 interface GameDetailScreenProps {
   onStartGame: (gameId: string) => void;
-  onAddItem: (gameId: string, item: string) => void;
+  onAddItem: (gameId: string, item: string) => Promise<boolean>;
   onCancelGame: (gameId: string) => void;
   currentUserId?: string;
+  addItemError?: string | null;
+  onClearAddItemError: () => void;
 }
 
 const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
@@ -43,6 +45,8 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   onAddItem,
   onCancelGame,
   currentUserId,
+  addItemError,
+  onClearAddItemError,
 }) => {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
@@ -117,7 +121,11 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   const handleRemoveItem = async (index: number) => {
     if (game && gameId) {
       try {
-        await removeItemFromGame(gameId, index);
+        if (game.gameMode === 'individual' && currentUserId) {
+          await removeItemFromGame(gameId, index, currentUserId);
+        } else {
+          await removeItemFromGame(gameId, index);
+        }
       } catch (error) {
         console.error('Error removing item:', error);
         // Could add error handling here
@@ -175,7 +183,11 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     }
   };
 
-  const canStartGame = isGameOwner(game, currentUserId || '') && game.status === 'creating' && game.items.length >= game.size * game.size;
+  const canStartGame = isGameOwner(game, currentUserId || '') && game.status === 'creating' && (
+    game.gameMode === 'joined' 
+      ? game.items.length >= game.size * game.size
+      : game.players.every(playerId => (game.playerItems?.[playerId]?.length || 0) >= game.size * game.size)
+  );
 
   const handleCancelClick = () => {
     setCancelDialogOpen(true);
@@ -257,14 +269,15 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
                         )}
       </Box>
 
-      {/* Game Info and Items - Stacked Vertically */}
+            {/* Game Info and Items - Equal Height Layout */}
       <Box sx={{ 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: 0.5, 
+        gap: 1, 
         flex: 1,
+        minHeight: 0,
       }}>
-                        {/* Game Info - Only show for creating games */}
+        {/* Game Info - Only show for creating games */}
         {game.status === 'creating' && (
           <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
@@ -280,21 +293,22 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
               </Box>
               
               <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {game.size} x {game.size} board • {game.players.length} players
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Created {new Date(game.createdAt).toISOString().split('T')[0]}
-                    </Typography>
-                  </Box>
-
+                <Stack spacing={1}>
                   {/* Players List */}
                   <Box>
-                    <Typography variant="h6" gutterBottom>
-                      Players
-                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="h6">
+                        Players
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {game.size} x {game.size} board • {game.gameMode === 'joined' ? 'joined list' : 'individual lists'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Created {new Date(game.createdAt).toISOString().split('T')[0]}
+                        </Typography>
+                      </Box>
+                    </Box>
                     <List dense>
                       {game.players.map((playerId, index) => (
                         <ListItem 
@@ -309,12 +323,12 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
                         >
                           <ListItemText 
                             primary={game.playerNames?.[playerId] || 'Unknown Player'}
-                            secondary={
-                              game.gameMode === 'individual' 
-                                ? `${game.playerItemCounts?.[playerId] || 0}/${game.size * game.size} items`
-                                : undefined
-                            }
                           />
+                          {game.gameMode === 'individual' && (
+                            <Typography variant="body2" color="text.secondary" sx={{ ml: 'auto' }}>
+                              {game.playerItemCounts?.[playerId] || 0}/{game.size * game.size} items
+                            </Typography>
+                          )}
                         </ListItem>
                       ))}
                     </List>
@@ -326,15 +340,31 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         )}
 
         {/* Items List - Show for all games in creating status */}
-        {game.status === 'creating' && (
-          <ItemList
-            items={game.items}
-            maxItems={game.size * game.size}
-            onAddItem={(item) => onAddItem(gameId, item)}
-            onRemoveItem={handleRemoveItem}
-            title="Items"
-            showAddButton={true}
-          />
+        {game.status === 'creating' && game.gameMode === 'joined' && (
+          <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
+            <ItemList
+              items={game.items}
+              maxItems={game.size * game.size}
+              onAddItem={(item) => onAddItem(gameId, item)}
+              onRemoveItem={handleRemoveItem}
+              title="Shared Items"
+              showAddButton={true}
+            />
+          </Box>
+        )}
+
+        {/* Individual Items Lists - Show for individual mode games in creating status */}
+        {game.status === 'creating' && game.gameMode === 'individual' && currentUserId && (
+          <Box sx={{ flex: 1, display: 'flex', minHeight: 0 }}>
+            <ItemList
+              items={game.playerItems?.[currentUserId] || []}
+              maxItems={game.size * game.size}
+              onAddItem={(item) => onAddItem(gameId, item)}
+              onRemoveItem={(index) => handleRemoveItem(index)}
+              title="My Items"
+              showAddButton={true}
+            />
+          </Box>
         )}
 
         {/* Bingo Board Selector - Show for active games */}
@@ -484,30 +514,22 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       </Dialog>
 
       {/* Copy Success Snackbar */}
-      <Snackbar
+      <CustomSnackbar
         open={copySnackbarOpen}
-        autoHideDuration={3000}
+        message="Invite code copied to clipboard!"
+        type="success"
         onClose={handleCloseCopySnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Box 
-          sx={{ 
-            backgroundColor: '#2196f3',
-            color: 'white',
-            padding: '12px 24px',
-            borderRadius: 2,
-            boxShadow: 3,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            fontWeight: 500,
-          }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: 500, color: 'white' }}>
-            ✅ Invite code copied to clipboard!
-          </Typography>
-        </Box>
-      </Snackbar>
+        autoHideDuration={3000}
+      />
+
+      {/* Add Item Error Snackbar */}
+      <CustomSnackbar
+        open={!!addItemError}
+        message={addItemError || ''}
+        type="error"
+        onClose={onClearAddItemError}
+        autoHideDuration={4000}
+      />
     </Box>
   );
 };

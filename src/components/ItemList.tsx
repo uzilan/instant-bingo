@@ -23,7 +23,7 @@ import {
 interface ItemListProps {
   items: string[];
   maxItems: number;
-  onAddItem: (item: string) => void;
+  onAddItem: (item: string) => Promise<boolean>;
   onRemoveItem: (index: number) => void;
   title?: string;
   showAddButton?: boolean;
@@ -41,11 +41,13 @@ const ItemList: React.FC<ItemListProps> = ({
   const [newItem, setNewItem] = useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleAddItem = () => {
-    if (newItem.trim() && !items.includes(newItem.trim())) {
-      onAddItem(newItem.trim());
-      setNewItem('');
-      setShowAddItemDialog(false);
+  const handleAddItem = async () => {
+    if (newItem.trim()) {
+      const success = await onAddItem(newItem.trim());
+      if (success) {
+        setNewItem('');
+        setShowAddItemDialog(false);
+      }
     }
   };
 
@@ -54,7 +56,7 @@ const ItemList: React.FC<ItemListProps> = ({
   };
 
   return (
-    <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, width: '100%' }}>
+    <Card sx={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0, width: '100%' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">
@@ -112,7 +114,10 @@ const ItemList: React.FC<ItemListProps> = ({
       </CardContent>
 
       {/* Add Item Dialog */}
-      <Dialog open={showAddItemDialog} onClose={() => setShowAddItemDialog(false)} maxWidth="sm" fullWidth>
+      <Dialog open={showAddItemDialog} onClose={() => {
+        setShowAddItemDialog(false);
+        setNewItem('');
+      }} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Item</DialogTitle>
         <DialogContent>
           <TextField
@@ -121,16 +126,17 @@ const ItemList: React.FC<ItemListProps> = ({
             margin="dense"
             label="Item"
             fullWidth
-            multiline
-            rows={3}
             placeholder="Enter item"
             value={newItem}
             onChange={(e) => setNewItem(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleAddItem()}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddItem()}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowAddItemDialog(false)}>Cancel</Button>
+          <Button onClick={() => {
+            setShowAddItemDialog(false);
+            setNewItem('');
+          }}>Cancel</Button>
           <Button onClick={handleAddItem} variant="contained">
             Add
           </Button>

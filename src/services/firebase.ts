@@ -25,6 +25,7 @@ export interface Game {
   inviteCode?: string;
   gameMode: 'joined' | 'individual';
   playerItemCounts?: { [playerId: string]: number };
+  playerItems?: { [playerId: string]: string[] };
   playerBoards?: { [playerId: string]: { [key: string]: string } };
   playerMarkedCells?: { [playerId: string]: { [key: string]: boolean } };
 }
@@ -136,7 +137,50 @@ export const addPlayerToGame = async (gameId: string, playerId: string): Promise
   }
 };
 
-export const addItemToGame = async (gameId: string, item: string, playerId: string): Promise<void> => {
+export const addItemToGame = async (gameId: string, item: string, playerId: string): Promise<{ success: boolean; error?: string }> => {
+  const gameRef = doc(db, 'games', gameId);
+  const game = await getGame(gameId);
+  
+  if (!game) {
+    return { success: false, error: 'Game not found' };
+  }
+
+  const trimmedItem = item.trim();
+  if (!trimmedItem) {
+    return { success: false, error: 'Item cannot be empty' };
+  }
+
+  if (game.gameMode === 'joined') {
+    // Add to shared items list - check for duplicates
+    if (game.items.includes(trimmedItem)) {
+      return { success: false, error: 'Item already exists' };
+    }
+    const updatedItems = [...game.items, trimmedItem];
+    await updateDoc(gameRef, { items: updatedItems });
+  } else {
+    // Individual mode - add to player's individual items list
+    const currentPlayerItems = game.playerItems?.[playerId] || [];
+    if (currentPlayerItems.includes(trimmedItem)) {
+      return { success: false, error: 'Item already exists' };
+    }
+    const updatedPlayerItems = [...currentPlayerItems, trimmedItem];
+    
+    await updateDoc(gameRef, {
+      playerItems: {
+        ...game.playerItems,
+        [playerId]: updatedPlayerItems
+      },
+      playerItemCounts: {
+        ...game.playerItemCounts,
+        [playerId]: updatedPlayerItems.length
+      }
+    });
+  }
+
+  return { success: true };
+};
+
+export const removeItemFromGame = async (gameId: string, itemIndex: number, playerId?: string): Promise<void> => {
   const gameRef = doc(db, 'games', gameId);
   const game = await getGame(gameId);
   
@@ -145,31 +189,24 @@ export const addItemToGame = async (gameId: string, item: string, playerId: stri
   }
 
   if (game.gameMode === 'joined') {
-    // Add to shared items list
-    const updatedItems = [...game.items, item];
+    const updatedItems = game.items.filter((_, index) => index !== itemIndex);
     await updateDoc(gameRef, { items: updatedItems });
-  } else {
-    // Individual mode - update player's item count
-    const currentCount = game.playerItemCounts?.[playerId] || 0;
+  } else if (game.gameMode === 'individual' && playerId) {
+    // Individual mode - remove from player's items
+    const currentPlayerItems = game.playerItems?.[playerId] || [];
+    const updatedPlayerItems = currentPlayerItems.filter((_, index) => index !== itemIndex);
+    
     await updateDoc(gameRef, {
+      playerItems: {
+        ...game.playerItems,
+        [playerId]: updatedPlayerItems
+      },
       playerItemCounts: {
         ...game.playerItemCounts,
-        [playerId]: currentCount + 1
+        [playerId]: updatedPlayerItems.length
       }
     });
   }
-};
-
-export const removeItemFromGame = async (gameId: string, itemIndex: number): Promise<void> => {
-  const gameRef = doc(db, 'games', gameId);
-  const game = await getGame(gameId);
-  
-  if (!game || game.gameMode !== 'joined') {
-    return;
-  }
-  
-  const updatedItems = game.items.filter((_, index) => index !== itemIndex);
-  await updateDoc(gameRef, { items: updatedItems });
 };
 
 // Utility function to generate a random board
@@ -219,11 +256,10 @@ export const startGame = async (gameId: string): Promise<void> => {
       playerMarkedCells[playerId] = generateMarkedCells(game.size);
     });
   } else {
-    // For individual mode, we need to collect all items from all players
-    // This would need to be implemented based on how individual items are stored
-    // For now, we'll use the joined mode approach
+    // For individual mode, each player uses their own items
     game.players.forEach(playerId => {
-      playerBoards[playerId] = generateRandomBoard(game.items, game.size);
+      const playerItems = game.playerItems?.[playerId] || [];
+      playerBoards[playerId] = generateRandomBoard(playerItems, game.size);
       playerMarkedCells[playerId] = generateMarkedCells(game.size);
     });
   }
