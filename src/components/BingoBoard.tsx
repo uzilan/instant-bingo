@@ -1,6 +1,5 @@
 import React from 'react';
 import { Box, Card, CardContent, Typography } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 interface BingoBoardProps {
   board: { [key: string]: string };
@@ -108,17 +107,6 @@ const BingoBoard: React.FC<BingoBoardProps> = ({
                   >
                     {cell}
                   </Typography>
-                  {isMarked && (
-                    <CheckCircleIcon
-                      sx={{
-                        position: 'absolute',
-                        top: 4,
-                        right: 4,
-                        color: 'white',
-                        fontSize: '1rem',
-                      }}
-                    />
-                  )}
                 </CardContent>
               </Card>
             );

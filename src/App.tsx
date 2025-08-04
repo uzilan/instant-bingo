@@ -44,10 +44,10 @@ function App() {
     window.location.href = '/create';
   };
 
-  const handleGameCreation = async (size: number, category: string, gameMode: 'joined' | 'individual', winningModel: 'line' | 'fullBoard') => {
+  const handleGameCreation = async (size: number, category: string, gameMode: 'joined' | 'individual', winningModel: 'line' | 'fullBoard'): Promise<string | null> => {
     if (!firebaseUser) {
       console.error('User not authenticated');
-      return;
+      return null;
     }
 
     try {
@@ -72,10 +72,11 @@ function App() {
         }
       };
 
-      await createGame(gameData);
-      window.location.href = '/';
+      const gameId = await createGame(gameData);
+      return gameId;
     } catch (error) {
       console.error('Error creating game:', error);
+      return null;
     }
   };
 

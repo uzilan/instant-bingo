@@ -252,13 +252,20 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
                     <Typography variant="h6" component="h2">
                       {game.category}
                     </Typography>
-                    {game.status === 'creating' && isGameOwner(game, currentUserId || '') && game.inviteCode && (
-                      <InviteDetails
-                        inviteCode={game.inviteCode}
-                        onCopy={() => handleCopyInviteCode(game.inviteCode!)}
-                        gameCategory={game.category}
-                      />
-                    )}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {game.status === 'completed' && game.winner && (
+                        <Typography variant="caption" color="success.main" sx={{ fontWeight: 'bold' }}>
+                          🏆 {game.playerNames?.[game.winner] || 'Unknown Player'}
+                        </Typography>
+                      )}
+                      {game.status === 'creating' && isGameOwner(game, currentUserId || '') && game.inviteCode && (
+                        <InviteDetails
+                          inviteCode={game.inviteCode}
+                          onCopy={() => handleCopyInviteCode(game.inviteCode!)}
+                          gameCategory={game.category}
+                        />
+                      )}
+                    </Box>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>

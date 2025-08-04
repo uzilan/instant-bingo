@@ -15,7 +15,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 
 interface GameCreationFormProps {
-  onSubmit: (size: number, category: string, gameMode: 'joined' | 'individual', winningModel: 'line' | 'fullBoard') => void;
+  onSubmit: (size: number, category: string, gameMode: 'joined' | 'individual', winningModel: 'line' | 'fullBoard') => Promise<string | null>;
 }
 
 const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
@@ -25,10 +25,13 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
   const [gameMode, setGameMode] = useState<'joined' | 'individual'>('joined');
   const [winningModel, setWinningModel] = useState<'line' | 'fullBoard'>('line');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (category.trim()) {
-      onSubmit(size, category.trim(), gameMode, winningModel);
+      const gameId = await onSubmit(size, category.trim(), gameMode, winningModel);
+      if (gameId) {
+        navigate(`/game/${gameId}`);
+      }
     }
   };
 

@@ -37,13 +37,11 @@ const InviteDetails: React.FC<InviteDetailsProps> = ({
     event.stopPropagation();
     
     const shareUrl = `https://instant-bingo.web.app/join/${inviteCode}`;
-    const shareText = `Join my ${gameCategory} game! Use this link: ${shareUrl}`;
     
     if (navigator.share) {
       try {
         await navigator.share({
           title: `Join ${gameCategory}`,
-          text: shareText,
           url: shareUrl,
         });
       } catch (error) {

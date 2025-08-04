@@ -197,6 +197,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   const handleConfirmCancel = () => {
     onCancelGame(gameId);
     setCancelDialogOpen(false);
+    navigate('/');
   };
 
   const handleCancelCancel = () => {
