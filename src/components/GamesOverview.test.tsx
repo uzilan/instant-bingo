@@ -138,4 +138,237 @@ describe('GamesOverview - Not Logged In', () => {
     // Should show the game instead
     expect(screen.getByText('Test Game')).toBeInTheDocument();
   });
+
+  describe('Winning Scenarios', () => {
+    test('should display winner for completed line win game', () => {
+      const completedGame = {
+        id: 'completed-game-1',
+        category: 'Movies',
+        size: 3,
+        status: 'completed' as const,
+        players: ['user1', 'user2'],
+        playerNames: {
+          'user1': 'Alice',
+          'user2': 'Bob'
+        },
+        maxPlayers: 4,
+        createdAt: '2024-01-01T00:00:00Z',
+        ownerId: 'user1',
+        items: ['Item 1', 'Item 2', 'Item 3'],
+        inviteCode: 'TEST123',
+        gameMode: 'joined' as const,
+        winningModel: 'line' as const,
+        winner: 'user1'
+      };
+
+      renderWithTheme(
+        <GamesOverview
+          games={[completedGame]}
+          onCreateNew={mockOnCreateNew}
+          onDeleteGame={mockOnDeleteGame}
+          isAuthenticated={true}
+          currentUserId="user1"
+        />
+      );
+
+      expect(screen.getByText('Movies')).toBeInTheDocument();
+      expect(screen.getByText('🏆 Alice')).toBeInTheDocument();
+    });
+
+    test('should display winner for completed fullBoard win game', () => {
+      const completedGame = {
+        id: 'completed-game-2',
+        category: 'Food',
+        size: 4,
+        status: 'completed' as const,
+        players: ['user1', 'user2'],
+        playerNames: {
+          'user1': 'Alice',
+          'user2': 'Bob'
+        },
+        maxPlayers: 4,
+        createdAt: '2024-01-01T00:00:00Z',
+        ownerId: 'user1',
+        items: ['Item 1', 'Item 2', 'Item 3'],
+        inviteCode: 'TEST456',
+        gameMode: 'joined' as const,
+        winningModel: 'fullBoard' as const,
+        winner: 'user2'
+      };
+
+      renderWithTheme(
+        <GamesOverview
+          games={[completedGame]}
+          onCreateNew={mockOnCreateNew}
+          onDeleteGame={mockOnDeleteGame}
+          isAuthenticated={true}
+          currentUserId="user1"
+        />
+      );
+
+      expect(screen.getByText('Food')).toBeInTheDocument();
+      expect(screen.getByText('🏆 Bob')).toBeInTheDocument();
+    });
+
+    test('should display unknown player when winner name is not available', () => {
+      const completedGame = {
+        id: 'completed-game-3',
+        category: 'Travel',
+        size: 3,
+        status: 'completed' as const,
+        players: ['user1', 'user2'],
+        playerNames: {
+          'user1': 'Alice',
+          'user2': 'Bob'
+        },
+        maxPlayers: 4,
+        createdAt: '2024-01-01T00:00:00Z',
+        ownerId: 'user1',
+        items: ['Item 1', 'Item 2', 'Item 3'],
+        inviteCode: 'TEST789',
+        gameMode: 'joined' as const,
+        winningModel: 'line' as const,
+        winner: 'unknown-user'
+      };
+
+      renderWithTheme(
+        <GamesOverview
+          games={[completedGame]}
+          onCreateNew={mockOnCreateNew}
+          onDeleteGame={mockOnDeleteGame}
+          isAuthenticated={true}
+          currentUserId="user1"
+        />
+      );
+
+      expect(screen.getByText('Travel')).toBeInTheDocument();
+      expect(screen.getByText('🏆 Unknown Player')).toBeInTheDocument();
+    });
+
+    test('should not display winner for active games', () => {
+      const activeGame = {
+        id: 'active-game-1',
+        category: 'Sports',
+        size: 3,
+        status: 'active' as const,
+        players: ['user1', 'user2'],
+        playerNames: {
+          'user1': 'Alice',
+          'user2': 'Bob'
+        },
+        maxPlayers: 4,
+        createdAt: '2024-01-01T00:00:00Z',
+        ownerId: 'user1',
+        items: ['Item 1', 'Item 2', 'Item 3'],
+        inviteCode: 'TEST101',
+        gameMode: 'joined' as const,
+        winningModel: 'line' as const
+      };
+
+      renderWithTheme(
+        <GamesOverview
+          games={[activeGame]}
+          onCreateNew={mockOnCreateNew}
+          onDeleteGame={mockOnDeleteGame}
+          isAuthenticated={true}
+          currentUserId="user1"
+        />
+      );
+
+      expect(screen.getByText('Sports')).toBeInTheDocument();
+      expect(screen.queryByText('🏆')).not.toBeInTheDocument();
+    });
+
+    test('should not display winner for creating games', () => {
+      const creatingGame = {
+        id: 'creating-game-1',
+        category: 'Music',
+        size: 3,
+        status: 'creating' as const,
+        players: ['user1', 'user2'],
+        playerNames: {
+          'user1': 'Alice',
+          'user2': 'Bob'
+        },
+        maxPlayers: 4,
+        createdAt: '2024-01-01T00:00:00Z',
+        ownerId: 'user1',
+        items: ['Item 1', 'Item 2', 'Item 3'],
+        inviteCode: 'TEST102',
+        gameMode: 'joined' as const,
+        winningModel: 'line' as const
+      };
+
+      renderWithTheme(
+        <GamesOverview
+          games={[creatingGame]}
+          onCreateNew={mockOnCreateNew}
+          onDeleteGame={mockOnDeleteGame}
+          isAuthenticated={true}
+          currentUserId="user1"
+        />
+      );
+
+      expect(screen.getByText('Music')).toBeInTheDocument();
+      expect(screen.queryByText('🏆')).not.toBeInTheDocument();
+    });
+
+    test('should display multiple completed games with winners', () => {
+      const completedGames = [
+        {
+          id: 'completed-game-1',
+          category: 'Movies',
+          size: 3,
+          status: 'completed' as const,
+          players: ['user1', 'user2'],
+          playerNames: {
+            'user1': 'Alice',
+            'user2': 'Bob'
+          },
+          maxPlayers: 4,
+          createdAt: '2024-01-01T00:00:00Z',
+          ownerId: 'user1',
+          items: ['Item 1', 'Item 2', 'Item 3'],
+          inviteCode: 'TEST123',
+          gameMode: 'joined' as const,
+          winningModel: 'line' as const,
+          winner: 'user1'
+        },
+        {
+          id: 'completed-game-2',
+          category: 'Food',
+          size: 4,
+          status: 'completed' as const,
+          players: ['user1', 'user2'],
+          playerNames: {
+            'user1': 'Alice',
+            'user2': 'Bob'
+          },
+          maxPlayers: 4,
+          createdAt: '2024-01-01T00:00:00Z',
+          ownerId: 'user1',
+          items: ['Item 1', 'Item 2', 'Item 3'],
+          inviteCode: 'TEST456',
+          gameMode: 'joined' as const,
+          winningModel: 'fullBoard' as const,
+          winner: 'user2'
+        }
+      ];
+
+      renderWithTheme(
+        <GamesOverview
+          games={completedGames}
+          onCreateNew={mockOnCreateNew}
+          onDeleteGame={mockOnDeleteGame}
+          isAuthenticated={true}
+          currentUserId="user1"
+        />
+      );
+
+      expect(screen.getByText('Movies')).toBeInTheDocument();
+      expect(screen.getByText('🏆 Alice')).toBeInTheDocument();
+      expect(screen.getByText('Food')).toBeInTheDocument();
+      expect(screen.getByText('🏆 Bob')).toBeInTheDocument();
+    });
+  });
 }); 

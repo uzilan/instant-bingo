@@ -175,4 +175,53 @@ describe('GameDetailScreen', () => {
     // Should render something (even if it's the error state)
     expect(screen.getByText('Game ID not found')).toBeInTheDocument();
   });
+
+  describe('Winning Scenarios', () => {
+    it('should not show winner section for active games', () => {
+      const activeGame: Game = {
+        ...mockGame,
+        status: 'active',
+        playerBoards: {
+          'user1': {
+            '0-0': 'Item 1',
+            '0-1': 'Item 2',
+            '0-2': 'Item 3',
+          }
+        },
+        playerMarkedCells: {
+          'user1': {
+            '0-0': true,
+            '0-1': true,
+          }
+        }
+      };
+
+      mockListenToGame.mockImplementation((_gameId: string, callback: (game: Game | null) => void) => {
+        callback(activeGame);
+        return vi.fn();
+      });
+
+      renderWithTheme(<GameDetailScreen {...mockProps} />);
+      
+      expect(screen.queryByText('🎉 Game Complete! 🎉')).not.toBeInTheDocument();
+      expect(screen.queryByText('Winner:')).not.toBeInTheDocument();
+    });
+
+    it('should not show winner section for creating games', () => {
+      const creatingGame: Game = {
+        ...mockGame,
+        status: 'creating',
+      };
+
+      mockListenToGame.mockImplementation((_gameId: string, callback: (game: Game | null) => void) => {
+        callback(creatingGame);
+        return vi.fn();
+      });
+
+      renderWithTheme(<GameDetailScreen {...mockProps} />);
+      
+      expect(screen.queryByText('🎉 Game Complete! 🎉')).not.toBeInTheDocument();
+      expect(screen.queryByText('Winner:')).not.toBeInTheDocument();
+    });
+  });
 }); 
