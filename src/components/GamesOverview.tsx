@@ -196,6 +196,9 @@ const GamesOverview: React.FC<GamesOverviewProps> = ({
         left: 0,
         p: 2,
         gap: 2,
+        // Account for iPhone safe areas
+        pt: { xs: 'calc(env(safe-area-inset-top) + 16px)', sm: 2 },
+        pb: { xs: 'calc(env(safe-area-inset-bottom) + 60px)', sm: 2 },
       }}
     >
       {/* Header */}

@@ -5,9 +5,6 @@ import {
   CardContent,
   Typography,
   Button,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
   Dialog,
   DialogTitle,
@@ -83,10 +80,30 @@ const ItemList: React.FC<ItemListProps> = ({
         
         <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
           {items.length > 0 ? (
-            <List dense>
+            <Box sx={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(2, 1fr)', 
+              gap: 1,
+              p: 1
+            }}>
               {items.map((item, index) => (
-                <ListItem key={index} sx={{ px: 0 }}>
-                  <ListItemText primary={`${index + 1}. ${item}`} />
+                <Box 
+                  key={index} 
+                  sx={{ 
+                    px: 1, 
+                    py: 0.5,
+                    border: '1px solid', 
+                    borderColor: 'grey.700', 
+                    borderRadius: 1,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    minHeight: '40px'
+                  }}
+                >
+                  <Typography variant="body2">
+                    {index + 1}. {item}
+                  </Typography>
                   <IconButton
                     size="small"
                     onClick={() => handleRemoveItem(index)}
@@ -94,9 +111,9 @@ const ItemList: React.FC<ItemListProps> = ({
                   >
                     <DeleteIcon />
                   </IconButton>
-                </ListItem>
+                </Box>
               ))}
-            </List>
+            </Box>
           ) : (
             <Box sx={{ 
               display: 'flex', 

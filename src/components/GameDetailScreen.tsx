@@ -15,6 +15,8 @@ import {
   Select,
   MenuItem,
   IconButton,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -55,6 +57,7 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     if (gameId) {
@@ -229,6 +232,10 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
     setLeaveDialogOpen(false);
   };
 
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
   const isGamePlayer = (game: Game, userId: string): boolean => {
     return game.players.includes(userId) && !isGameOwner(game, userId);
   };
@@ -248,13 +255,14 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
         p: 1,
         gap: 2,
         overflow: 'hidden',
-        // Add padding for floating buttons
-        pb: { xs: 'calc(env(safe-area-inset-bottom) + 100px)', sm: 1 }, // Reduced padding for floating buttons
+        // Account for iPhone safe areas
+        pt: { xs: 'calc(env(safe-area-inset-top) + 16px)', sm: 1 },
+        pb: { xs: 'calc(env(safe-area-inset-bottom) + 60px)', sm: 1 },
       }}
     >
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <IconButton onClick={() => navigate('/')}>
+        <IconButton onClick={() => navigate('/')}>
           <ArrowBackIcon />
         </IconButton>
         <Typography variant="h4" component="h1">
@@ -265,176 +273,19 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           color={getStatusColor(game.status) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
           size="small"
         />
-                                                    {isGameOwner(game, currentUserId || '') && (
-                          <Chip label="Owner" size="small" variant="outlined" />
-                        )}
+        {isGameOwner(game, currentUserId || '') && (
+          <Chip label="Owner" size="small" variant="outlined" />
+        )}
       </Box>
 
-            {/* Game Info and Items - Equal Height Layout */}
-      <Box sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: 1, 
-        flex: 1,
-        minHeight: 0,
-        maxHeight: 'calc(100vh - 200px)', // Reserve space for header and buttons
-      }}>
-        {/* Game Info - Only show for creating games */}
-        {game.status === 'creating' && (
-          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, maxHeight: '60vh' }}>
-            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, width: '100%' }}>
-                <Typography variant="h6">
-                  Players
-                </Typography>
-                <InviteDetails
-                  inviteCode={game.inviteCode || ''}
-                  onCopy={handleCopyInviteCode}
-                  gameCategory={game.category}
-                />
-              </Box>
-              
-              <Box sx={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-                <Stack spacing={1}>
-                  {/* Players List */}
-                  <Box>
-                    <Box sx={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: 'repeat(2, 1fr)', 
-                      gap: 1 
-                    }}>
-                      {game.players.map((playerId, index) => (
-                        <Box 
-                          key={index} 
-                          sx={{ 
-                            px: 1, 
-                            py: 0.5,
-                            border: '1px solid', 
-                            borderColor: 'grey.700', 
-                            borderRadius: 1,
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            minHeight: '40px'
-                          }}
-                        >
-                          <Typography variant="body2">
-                            {game.playerNames?.[playerId] || 'Unknown Player'}
-                          </Typography>
-                          {game.gameMode === 'individual' && (
-                            <Typography variant="body2" color="text.secondary">
-                              {game.playerItemCounts?.[playerId] || 0}/{game.size * game.size}
-                            </Typography>
-                          )}
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                </Stack>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Items List - Show for all games in creating status */}
-        {game.status === 'creating' && game.gameMode === 'joined' && (
-          <Box sx={{ flex: 1, display: 'flex', minHeight: 0, maxHeight: '40vh' }}>
-            <ItemList
-              items={game.items}
-              maxItems={game.size * game.size}
-              onAddItem={(item) => onAddItem(gameId, item)}
-              onRemoveItem={handleRemoveItem}
-              title="Shared Items"
-              showAddButton={true}
-            />
-          </Box>
-        )}
-
-        {/* Individual Items Lists - Show for individual mode games in creating status */}
-        {game.status === 'creating' && game.gameMode === 'individual' && currentUserId && (
-          <Box sx={{ flex: 1, display: 'flex', minHeight: 0, maxHeight: '40vh' }}>
-            <ItemList
-              items={game.playerItems?.[currentUserId] || []}
-              maxItems={game.size * game.size}
-              onAddItem={(item) => onAddItem(gameId, item)}
-              onRemoveItem={(index) => handleRemoveItem(index)}
-              title="My Items"
-              showAddButton={true}
-            />
-          </Box>
-        )}
-
-        {/* Winner Display for Completed Games */}
-        {game.status === 'completed' && game.winner && (
-          <Card sx={{ mb: 0.2 }}>
-            <CardContent sx={{ textAlign: 'center', py: 1 }}>
-              <Typography variant="h6" color="success.main" gutterBottom>
-                🎉 Game Complete! 🎉
-              </Typography>
-              <Typography variant="body1" gutterBottom>
-                Winner: {game.playerNames?.[game.winner] || 'Unknown Player'}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Won by {game.winningModel === 'line' ? 'completing a line' : 'completing the board'}
-              </Typography>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Bingo Board Selector - Show for active and completed games */}
-        {(game.status === 'active' || game.status === 'completed') && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && (
-          <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Boards:
-                </Typography>
-                                  <Select
-                    value={selectedPlayerId || (game.status === 'completed' ? game.winner : currentUserId)}
-                    onChange={(e) => setSelectedPlayerId(e.target.value)}
-                    size="small"
-                    sx={{ minWidth: 200 }}
-                  >
-                    <MenuItem value={currentUserId}>
-                      My Board
-                    </MenuItem>
-                    {game.players
-                      .filter(playerId => playerId !== currentUserId)
-                      .map((playerId) => (
-                        <MenuItem key={playerId} value={playerId}>
-                          {game.playerNames?.[playerId] || 'Unknown Player'}
-                        </MenuItem>
-                      ))}
-                  </Select>
-              </Box>
-              
-              <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                <BingoBoard
-                  board={game.playerBoards[selectedPlayerId || (game.status === 'completed' && game.winner ? game.winner : currentUserId)]}
-                  markedCells={game.playerMarkedCells?.[selectedPlayerId || (game.status === 'completed' && game.winner ? game.winner : currentUserId)] || {}}
-                  onCellClick={game.status === 'completed' ? undefined : ((selectedPlayerId || currentUserId) === currentUserId ? handleCellClick : undefined)}
-                  size={game.size}
-                />
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-      </Box>
-
-      {/* Floating Action Buttons - Always visible above mobile browser UI */}
+      {/* Action Buttons - Below header */}
       {game.status === 'creating' && isGameOwner(game, currentUserId || '') && (
         <Box sx={{ 
-          position: 'fixed',
-          bottom: { xs: 'calc(env(safe-area-inset-bottom) + 5px)', sm: 16 },
-          left: 8,
-          right: 8,
-          zIndex: 1000,
           display: 'flex',
           gap: 2,
           backgroundColor: 'background.default',
           borderRadius: 2,
-          boxShadow: 3,
+          boxShadow: 1,
           p: 1,
         }}>
           <Button
@@ -456,20 +307,15 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Button>
         </Box>
       )}
-      
+
       {/* Cancel button for active games */}
       {game.status === 'active' && isGameOwner(game, currentUserId || '') && (
         <Box sx={{ 
-          position: 'fixed',
-          bottom: { xs: 'calc(env(safe-area-inset-bottom) + 5px)', sm: 16 },
-          left: 8,
-          right: 8,
-          zIndex: 1000,
           display: 'flex',
           gap: 2,
           backgroundColor: 'background.default',
           borderRadius: 2,
-          boxShadow: 3,
+          boxShadow: 1,
           p: 1,
         }}>
           <Button
@@ -486,16 +332,11 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
       {/* Leave button for players */}
       {(game.status === 'creating' || game.status === 'active') && isGamePlayer(game, currentUserId || '') && (
         <Box sx={{ 
-          position: 'fixed',
-          bottom: { xs: 'calc(env(safe-area-inset-bottom) + 5px)', sm: 16 },
-          left: 8,
-          right: 8,
-          zIndex: 1000,
           display: 'flex',
           gap: 2,
           backgroundColor: 'background.default',
           borderRadius: 2,
-          boxShadow: 3,
+          boxShadow: 1,
           p: 1,
         }}>
           <Button
@@ -508,6 +349,256 @@ const GameDetailScreen: React.FC<GameDetailScreenProps> = ({
           </Button>
         </Box>
       )}
+
+      {/* Tabs Content */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flex: 1,
+        minHeight: 0,
+        // Reserve space for iPhone home indicator and navigation
+        pb: { xs: 'calc(env(safe-area-inset-bottom) + 60px)', sm: 0 },
+      }}>
+        {/* Tabs for Creating Games */}
+        {game.status === 'creating' && (
+          <>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              variant="fullWidth"
+              sx={{ 
+                borderBottom: 2,
+                borderColor: 'grey.400',
+                '& .MuiTab-root': {
+                  color: 'grey.600',
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  minHeight: 48,
+                  '&.Mui-selected': {
+                    color: 'primary.main',
+                    fontWeight: 600,
+                  }
+                },
+                '& .MuiTabs-indicator': {
+                  backgroundColor: 'primary.main',
+                  height: 3,
+                }
+              }}
+            >
+              <Tab label="Players" />
+              {game.gameMode === 'joined' && <Tab label="Items" />}
+              {game.gameMode === 'individual' && currentUserId && <Tab label="My Items" />}
+            </Tabs>
+            
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              {/* Players Tab */}
+              {activeTab === 0 && (
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, width: '100%' }}>
+                      <Typography variant="h6">
+                        Players
+                      </Typography>
+                      <InviteDetails
+                        inviteCode={game.inviteCode || ''}
+                        onCopy={handleCopyInviteCode}
+                        gameCategory={game.category}
+                      />
+                    </Box>
+                    
+                    <Box sx={{ flex: 1, minHeight: 0 }}>
+                      <Stack spacing={1}>
+                        <Box>
+                          <Box sx={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: 'repeat(2, 1fr)', 
+                            gap: 1 
+                          }}>
+                            {game.players.map((playerId, index) => (
+                              <Box 
+                                key={index} 
+                                sx={{ 
+                                  px: 1, 
+                                  py: 0.5,
+                                  border: '1px solid', 
+                                  borderColor: 'grey.700', 
+                                  borderRadius: 1,
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  minHeight: '40px'
+                                }}
+                              >
+                                <Typography variant="body2">
+                                  {game.playerNames?.[playerId] || 'Unknown Player'}
+                                </Typography>
+                                {game.gameMode === 'individual' && (
+                                  <Typography variant="body2" color="text.secondary">
+                                    {game.playerItemCounts?.[playerId] || 0}/{game.size * game.size}
+                                  </Typography>
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+                        </Box>
+                      </Stack>
+                    </Box>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Shared Items Tab */}
+              {activeTab === 1 && game.gameMode === 'joined' && (
+                <Box sx={{ height: '100%', display: 'flex' }}>
+                  <ItemList
+                    items={game.items}
+                    maxItems={game.size * game.size}
+                    onAddItem={(item) => onAddItem(gameId, item)}
+                    onRemoveItem={handleRemoveItem}
+                    title="Items"
+                    showAddButton={true}
+                  />
+                </Box>
+              )}
+
+              {/* My Items Tab */}
+              {activeTab === 1 && game.gameMode === 'individual' && currentUserId && (
+                <Box sx={{ height: '100%', display: 'flex' }}>
+                  <ItemList
+                    items={game.playerItems?.[currentUserId] || []}
+                    maxItems={game.size * game.size}
+                    onAddItem={(item) => onAddItem(gameId, item)}
+                    onRemoveItem={(index) => handleRemoveItem(index)}
+                    title="My Items"
+                    showAddButton={true}
+                  />
+                </Box>
+              )}
+            </Box>
+          </>
+        )}
+
+        {/* Active Games - With Tabs */}
+        {game.status === 'active' && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && (
+          <>
+            <Tabs 
+              value={activeTab} 
+              onChange={handleTabChange}
+              variant="fullWidth"
+              sx={{ 
+                borderBottom: 2,
+                borderColor: 'grey.400',
+                '& .MuiTab-root': {
+                  color: 'grey.600',
+                  fontWeight: 500,
+                  textTransform: 'none',
+                  minHeight: 48,
+                  '&.Mui-selected': {
+                    color: 'primary.main',
+                    fontWeight: 600,
+                  }
+                },
+                '& .MuiTabs-indicator': {
+                  backgroundColor: 'primary.main',
+                  height: 3,
+                }
+              }}
+            >
+              <Tab label="Game Board" />
+            </Tabs>
+            
+            <Box sx={{ flex: 1, minHeight: 0 }}>
+              <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                    <Select
+                      value={selectedPlayerId || currentUserId}
+                      onChange={(e) => setSelectedPlayerId(e.target.value)}
+                      size="small"
+                      sx={{ minWidth: 200 }}
+                    >
+                      <MenuItem value={currentUserId}>
+                        My Board
+                      </MenuItem>
+                      {game.players
+                        .filter(playerId => playerId !== currentUserId)
+                        .map((playerId) => (
+                          <MenuItem key={playerId} value={playerId}>
+                            {game.playerNames?.[playerId] || 'Unknown Player'}
+                          </MenuItem>
+                        ))}
+                    </Select>
+                  </Box>
+                  
+                                  <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto' }}>
+                  <BingoBoard
+                    board={game.playerBoards[selectedPlayerId || currentUserId]}
+                    markedCells={game.playerMarkedCells?.[selectedPlayerId || currentUserId] || {}}
+                    onCellClick={(selectedPlayerId || currentUserId) === currentUserId ? handleCellClick : undefined}
+                    size={game.size}
+                  />
+                </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          </>
+        )}
+
+        {/* Completed Games - Single Panel with Winner Indication */}
+        {game.status === 'completed' && game.playerBoards && game.playerMarkedCells && currentUserId && game.playerBoards[currentUserId] && game.winner && (
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            {/* Winner Indication */}
+            <Card sx={{ mb: 1 }}>
+              <CardContent sx={{ textAlign: 'center', py: 0.5, pb: '10px !important' }}>
+                <Typography variant="h6" color="success.main" gutterBottom>
+                  🎉 Game Complete! 🎉
+                </Typography>
+                <Typography variant="body1">
+                  Winner: {game.playerNames?.[game.winner] || 'Unknown Player'}
+                </Typography>
+              </CardContent>
+            </Card>
+
+            {/* Board Selector */}
+            <Card sx={{ height: 'calc(100% - 60px)', display: 'flex', flexDirection: 'column' }}>
+              <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 1, minHeight: 0 }}>
+                                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                    <Select
+                    value={selectedPlayerId || game.winner}
+                    onChange={(e) => setSelectedPlayerId(e.target.value)}
+                    size="small"
+                    sx={{ minWidth: 200 }}
+                  >
+                    <MenuItem value={game.winner}>
+                      {game.playerNames?.[game.winner] || 'Unknown Player'} (Winner)
+                    </MenuItem>
+                    <MenuItem value={currentUserId}>
+                      My Board
+                    </MenuItem>
+                    {game.players
+                      .filter(playerId => playerId !== currentUserId && playerId !== game.winner)
+                      .map((playerId) => (
+                        <MenuItem key={playerId} value={playerId}>
+                          {game.playerNames?.[playerId] || 'Unknown Player'}
+                        </MenuItem>
+                      ))}
+                  </Select>
+                </Box>
+                
+                <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto' }}>
+                  <BingoBoard
+                    board={game.playerBoards[selectedPlayerId || game.winner]}
+                    markedCells={game.playerMarkedCells?.[selectedPlayerId || game.winner] || {}}
+                    size={game.size}
+                  />
+                </Box>
+              </CardContent>
+            </Card>
+          </Box>
+        )}
+      </Box>
+
+
 
       {/* Cancel Confirmation Dialog */}
       <Dialog
