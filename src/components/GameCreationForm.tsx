@@ -28,9 +28,13 @@ const GameCreationForm: React.FC<GameCreationFormProps> = ({ onSubmit }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (category.trim()) {
-      const gameId = await onSubmit(size, category.trim(), gameMode, winningModel);
-      if (gameId) {
-        navigate(`/game/${gameId}`);
+      try {
+        const gameId = await onSubmit(size, category.trim(), gameMode, winningModel);
+        if (gameId) {
+          navigate(`/game/${gameId}`);
+        }
+      } catch (error) {
+        console.error('Error creating game:', error);
       }
     }
   };
